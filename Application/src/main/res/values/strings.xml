@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">CameraSample</string>
+    <string name="btn_camera">拍照(SurfaceView)</string>
+    <string name="btn_gles">拍照(GLSurfaceView)</string>
+
+    <string name="btn_view_photo">查看照片</string>
+    <string name="btn_take">拍摄</string>
+    <string name="btn_switch_camera">切换镜头</string>
+</resources>
