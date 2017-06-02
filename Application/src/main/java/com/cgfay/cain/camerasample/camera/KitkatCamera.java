@@ -1,5 +1,5 @@
 
-package com.cgfay.cain.camerasample.widget;
+package com.cgfay.cain.camerasample.camera;
 
 import android.graphics.Point;
 import android.graphics.SurfaceTexture;
@@ -11,9 +11,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class CustomCamera implements ICamera {
+public class KitkatCamera implements ICamera {
 
-    private static final String TAG = "CustomCamera";
+    private static final String TAG = "KitkatCamera";
 
     private Config mConfig;
     private Camera mCamera;
@@ -25,7 +25,7 @@ public class CustomCamera implements ICamera {
     private Point mPicSize;
     private Point mPreSize;
 
-    public CustomCamera() {
+    public KitkatCamera() {
         this.mConfig = new Config();
         mConfig.minPreviewWidth = 720;
         mConfig.minPictureWidth = 720;

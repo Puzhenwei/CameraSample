@@ -1,5 +1,5 @@
 
-package com.cgfay.cain.camerasample.widget;
+package com.cgfay.cain.camerasample.camera;
 
 import android.content.res.Resources;
 import android.graphics.SurfaceTexture;
@@ -34,13 +34,13 @@ public class CameraDrawer implements GLSurfaceView.Renderer {
         calculateMatrix();
     }
 
-    public void setViewSize(int width,int height){
+    public void setViewSize(int width,int height) {
         this.width = width;
         this.height = height;
         calculateMatrix();
     }
 
-    private void calculateMatrix(){
+    private void calculateMatrix() {
         matrix = GLESUtils.getShowMatrix(this.dataWidth, this.dataHeight, this.width, this.height);
         if (cameraId == 1) {
             GLESUtils.flip(matrix, true, false);

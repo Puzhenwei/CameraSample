@@ -1,4 +1,4 @@
-package com.cgfay.cain.camerasample.widget;
+package com.cgfay.cain.camerasample.camera;
 
 import android.graphics.Point;
 import android.graphics.SurfaceTexture;
@@ -20,8 +20,11 @@ public interface ICamera {
     void setOnPreviewFrameCallback(PreviewFrameCallback callback);
 
     class Config {
+        // 设置帧率
         float rate;
+        // 最小预览宽度
         int minPreviewWidth;
+        // 最小图片宽度
         int minPictureWidth;
     }
 

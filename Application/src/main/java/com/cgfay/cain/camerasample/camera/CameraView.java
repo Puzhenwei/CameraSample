@@ -1,5 +1,5 @@
 
-package com.cgfay.cain.camerasample.widget;
+package com.cgfay.cain.camerasample.camera;
 
 import android.content.Context;
 import android.graphics.Point;
@@ -7,6 +7,7 @@ import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.util.AttributeSet;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -27,14 +28,19 @@ public class CameraView extends GLSurfaceView implements GLSurfaceView.Renderer 
 
     public CameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init();
+        init(context);
     }
 
-    private void init() {
+    private void init(Context context) {
         setEGLContextClientVersion(2);
         setRenderer(this);
         setRenderMode(RENDERMODE_WHEN_DIRTY);
-        mCamera = new CustomCamera();
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            mCamera = new LollipopCamera(context);
+//        } else {
+//            mCamera = new KitkatCamera();
+//        }
+        mCamera = new KitkatCamera();
         mCameraDrawer = new CameraDrawer(getResources());
     }
 

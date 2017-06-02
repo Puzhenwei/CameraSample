@@ -16,7 +16,7 @@ import android.widget.Toast;
 
 import com.cgfay.cain.camerasample.R;
 import com.cgfay.cain.camerasample.util.PermissionUtils;
-import com.cgfay.cain.camerasample.widget.CameraView;
+import com.cgfay.cain.camerasample.camera.CameraView;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
