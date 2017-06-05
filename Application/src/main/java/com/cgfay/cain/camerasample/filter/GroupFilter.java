@@ -10,16 +10,12 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-/**
- * Created by Administrator on 2017/6/2.
- */
-
-public class GroupFilter extends AFilter {
+public class GroupFilter extends Filter {
 
 
-    private Queue<AFilter> mFilterQueue;
+    private Queue<Filter> mFilterQueue;
 
-    private List<AFilter> mFilters;
+    private List<Filter> mFilters;
     private int width = 0, height = 0;
     private int size = 0;
 
@@ -40,7 +36,7 @@ public class GroupFilter extends AFilter {
      * 添加一个特效
      * @param filter
      */
-    public void addFilter(AFilter filter) {
+    public void addFilter(Filter filter) {
         // Android屏幕相对GL世界的纹理 y轴是反过来的
         GLESUtils.flip(filter.getMatrix(), false, true);
         mFilterQueue.add(filter);
@@ -52,7 +48,7 @@ public class GroupFilter extends AFilter {
      * @param filter
      * @return
      */
-    public boolean removeFilter(AFilter filter) {
+    public boolean removeFilter(Filter filter) {
         boolean result = mFilters.remove(filter);
         if (result) {
             size--;
@@ -73,7 +69,7 @@ public class GroupFilter extends AFilter {
         updateFilter();
         textureIndex = 0;
         if (size > 0) {
-            for (AFilter filter : mFilters) {
+            for (Filter filter : mFilters) {
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frame[0]);
                 GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER,
                         GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D,
@@ -97,7 +93,7 @@ public class GroupFilter extends AFilter {
      * 刷新特效
      */
     private void updateFilter() {
-        AFilter filter;
+        Filter filter;
         while ((filter = mFilterQueue.poll()) != null) {
             filter.create();
             filter.setSize(width, height);
@@ -154,16 +150,17 @@ public class GroupFilter extends AFilter {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[i]);
             GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0,
                     GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
-            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
+
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,
                     GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
 
-            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,
                     GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
 
-            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,
                     GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
 
-            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,
                     GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
         }
     }

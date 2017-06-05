@@ -7,8 +7,8 @@ import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 
-import com.cgfay.cain.camerasample.filter.AFilter;
 import com.cgfay.cain.camerasample.filter.CameraFilter;
+import com.cgfay.cain.camerasample.filter.Filter;
 import com.cgfay.cain.camerasample.util.GLESUtils;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -21,7 +21,7 @@ public class CameraDrawer implements GLSurfaceView.Renderer {
     private SurfaceTexture surfaceTexture;
     private int width,height;
     private int dataWidth,dataHeight;
-    private AFilter mBaseFilter;
+    private Filter mBaseFilter;
     private int cameraId = 1;
 
     public CameraDrawer(Resources res){

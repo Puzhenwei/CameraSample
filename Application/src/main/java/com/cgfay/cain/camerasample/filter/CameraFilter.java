@@ -1,18 +1,9 @@
-/*
- *
- * AiyaFilter.java
- * 
- * Created by Wuwang on 2016/11/19
- * Copyright © 2016年 深圳哎吖科技. All rights reserved.
- */
+
 package com.cgfay.cain.camerasample.filter;
 
 import android.content.res.Resources;
 import android.hardware.Camera;
 
-/**
- * Description:
- */
 public class CameraFilter extends BaseFilter {
 
     public CameraFilter(Resources resources) {

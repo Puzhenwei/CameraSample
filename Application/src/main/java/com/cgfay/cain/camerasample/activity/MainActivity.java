@@ -14,6 +14,8 @@ public class MainActivity extends AppCompatActivity {
 
     Button mBtnGLES;
 
+    Button mBtnCamera2;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,5 +36,15 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+        mBtnCamera2 = (Button) findViewById(R.id.btn_camera2);
+        mBtnCamera2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, Camera2Activity.class);
+                startActivity(intent);
+            }
+        });
+
     }
 }

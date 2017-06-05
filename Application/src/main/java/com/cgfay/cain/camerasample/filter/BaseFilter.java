@@ -7,7 +7,7 @@ import android.opengl.GLES20;
 
 import java.util.Arrays;
 
-public class BaseFilter extends AFilter{
+public class BaseFilter extends Filter {
 
     private int mHCoordMatrix;
     private float[] mCoordMatrix = Arrays.copyOf(OM,16);

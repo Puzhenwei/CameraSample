@@ -3,8 +3,10 @@
     package="com.cgfay.cain.camerasample">
 
     <uses-permission android:name="android.permission.CAMERA" />
+
     <uses-feature android:name="android.hardware.camera2" />
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
@@ -22,7 +24,8 @@
         </activity>
         <activity android:name=".activity.CaptureViewActivity" />
         <activity android:name=".activity.GLCaptureViewActivity" />
-        <activity android:name=".activity.PhotoViewActivity"></activity>
+        <activity android:name=".activity.Camera2Activity" />
+        <activity android:name=".activity.PhotoViewActivity" />
     </application>
 
 </manifest>

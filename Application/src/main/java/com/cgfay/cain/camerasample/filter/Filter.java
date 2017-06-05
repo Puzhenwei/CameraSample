@@ -16,7 +16,7 @@ import java.nio.ShortBuffer;
 import java.util.Arrays;
 
 
-public abstract class AFilter {
+public abstract class Filter {
 
     private static final String TAG="Filter";
 
@@ -94,7 +94,7 @@ public abstract class AFilter {
     private SparseArray<int[]> mInts;
     private SparseArray<float[]> mFloats;
 
-    public AFilter(Resources mRes){
+    public Filter(Resources mRes){
         this.mRes=mRes;
         initBuffer();
     }
