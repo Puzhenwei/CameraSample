@@ -66,8 +66,11 @@ public class WaterMaskFilter extends ClearFilter {
 
     private void  createTexture() {
         if (mBitmap != null) {
+            // 创建texture
             GLES20.glGenTextures(1, mTextures, 0);
+            // 绑定texture
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextures[0]);
+            // 设置参数
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
                     GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
@@ -76,9 +79,11 @@ public class WaterMaskFilter extends ClearFilter {
                     GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_LINEAR);
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
                     GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_LINEAR);
-
+            // 创建mip贴图
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, mBitmap, 0);
+            // 镜像翻转
             GLESUtils.flip(mFilter.getMatrix(), false, true);
+            // 贴图壁纸翻转
             mFilter.setTextureId(mTextures[0]);
         }
     }

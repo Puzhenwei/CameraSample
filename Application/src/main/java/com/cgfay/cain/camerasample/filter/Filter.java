@@ -18,17 +18,17 @@ import java.util.Arrays;
 
 public abstract class Filter {
 
-    private static final String TAG="Filter";
+    private static final String TAG = "Filter";
 
-    public static final int KEY_OUT=0x101;
-    public static final int KEY_IN=0x102;
-    public static final int KEY_INDEX=0x201;
+    public static final int KEY_OUT = 0x101;
+    public static final int KEY_IN = 0x102;
+    public static final int KEY_INDEX = 0x201;
 
-    public static boolean DEBUG=true;
+    public static boolean DEBUG = true;
     /**
      * 单位矩阵
      */
-    public static final float[] OM= GLESUtils.getOriginalMatrix();
+    public static final float[] OM = GLESUtils.getOriginalMatrix();
     /**
      * 程序句柄
      */
@@ -83,7 +83,7 @@ public abstract class Filter {
     };
 
     //纹理坐标
-    private float[] coord={
+    private float[] coord = {
         0.0f, 0.0f,
         0.0f,  1.0f,
         1.0f,  0.0f,
@@ -94,20 +94,20 @@ public abstract class Filter {
     private SparseArray<int[]> mInts;
     private SparseArray<float[]> mFloats;
 
-    public Filter(Resources mRes){
+    public Filter(Resources mRes) {
         this.mRes=mRes;
         initBuffer();
     }
 
-    public final void create(){
+    public final void create() {
         onCreate();
     }
 
-    public final void setSize(int width,int height){
+    public final void setSize(int width,int height) {
         onSizeChanged(width,height);
     }
 
-    public void draw(){
+    public void draw() {
         onClear();
         onUseProgram();
         onSetExpandData();
@@ -115,51 +115,51 @@ public abstract class Filter {
         onDraw();
     }
 
-    public void setMatrix(float[] matrix){
+    public void setMatrix(float[] matrix) {
         this.matrix=matrix;
     }
 
-    public float[] getMatrix(){
+    public float[] getMatrix() {
         return matrix;
     }
 
-    public final void setTextureType(int type){
+    public final void setTextureType(int type) {
         this.textureType=type;
     }
 
-    public final int getTextureType(){
+    public final int getTextureType() {
         return textureType;
     }
 
-    public final int getTextureId(){
+    public final int getTextureId() {
         return textureId;
     }
 
-    public final void setTextureId(int textureId){
-        this.textureId=textureId;
+    public final void setTextureId(int textureId) {
+        this.textureId = textureId;
     }
 
-    public void setFlag(int flag){
+    public void setFlag(int flag) {
         this.mFlag=flag;
     }
 
-    public int getFlag(){
+    public int getFlag() {
         return mFlag;
     }
 
-    public void setFloat(int type,float ... params){
+    public void setFloat(int type,float ... params) {
         if(mFloats==null){
             mFloats=new SparseArray<>();
         }
         mFloats.put(type,params);
     }
-    public void setInt(int type,int ... params){
+    public void setInt(int type,int ... params) {
         if(mInts==null){
             mInts=new SparseArray<>();
         }
         mInts.put(type,params);
     }
-    public void setBool(int type,boolean ... params){
+    public void setBool(int type,boolean ... params) {
         if(mBools==null){
             mBools=new SparseArray<>();
         }
@@ -172,16 +172,16 @@ public abstract class Filter {
         return !(b == null || b.length <= index) && b[index];
     }
 
-    public int getInt(int type,int index){
+    public int getInt(int type,int index) {
         if (mInts == null) return 0;
         int[] b = mInts.get(type);
-        if(b == null || b.length <= index){
+        if(b == null || b.length <= index) {
             return 0;
         }
         return b[index];
     }
 
-    public float getFloat(int type,int index){
+    public float getFloat(int type,int index) {
         if (mFloats == null) return 0;
         float[] b = mFloats.get(type);
         if(b == null || b.length <= index){
@@ -190,7 +190,7 @@ public abstract class Filter {
         return b[index];
     }
 
-    public int getOutputTexture(){
+    public int getOutputTexture() {
         return -1;
     }
 
@@ -200,7 +200,7 @@ public abstract class Filter {
     protected abstract void onCreate();
     protected abstract void onSizeChanged(int width,int height);
 
-    protected final void createProgram(String vertex,String fragment){
+    protected final void createProgram(String vertex,String fragment) {
         mProgram= uCreateGlProgram(vertex,fragment);
         mHPosition= GLES20.glGetAttribLocation(mProgram, "vPosition");
         mHCoord=GLES20.glGetAttribLocation(mProgram,"vCoord");
@@ -208,14 +208,14 @@ public abstract class Filter {
         mHTexture=GLES20.glGetUniformLocation(mProgram,"vTexture");
     }
 
-    protected final void createProgramByAssetsFile(String vertex,String fragment){
+    protected final void createProgramByAssetsFile(String vertex,String fragment) {
         createProgram(uRes(mRes,vertex),uRes(mRes,fragment));
     }
 
     /**
      * Buffer初始化
      */
-    protected void initBuffer(){
+    protected void initBuffer() {
         ByteBuffer a=ByteBuffer.allocateDirect(32);
         a.order(ByteOrder.nativeOrder());
         mVerBuffer=a.asFloatBuffer();
@@ -228,14 +228,14 @@ public abstract class Filter {
         mTexBuffer.position(0);
     }
 
-    protected void onUseProgram(){
+    protected void onUseProgram() {
         GLES20.glUseProgram(mProgram);
     }
 
     /**
      * 启用顶点坐标和纹理坐标进行绘制
      */
-    protected void onDraw(){
+    protected void onDraw() {
         GLES20.glEnableVertexAttribArray(mHPosition);
         GLES20.glVertexAttribPointer(mHPosition,2, GLES20.GL_FLOAT, false, 0,mVerBuffer);
         GLES20.glEnableVertexAttribArray(mHCoord);
@@ -248,7 +248,7 @@ public abstract class Filter {
     /**
      * 清除画布
      */
-    protected void onClear(){
+    protected void onClear() {
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
     }
@@ -256,27 +256,27 @@ public abstract class Filter {
     /**
      * 设置其他扩展数据
      */
-    protected void onSetExpandData(){
+    protected void onSetExpandData() {
         GLES20.glUniformMatrix4fv(mHMatrix,1,false,matrix,0);
     }
 
     /**
      * 绑定默认纹理
      */
-    protected void onBindTexture(){
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0+textureType);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,getTextureId());
-        GLES20.glUniform1i(mHTexture,textureType);
+    protected void onBindTexture() {
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + textureType);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTextureId());
+        GLES20.glUniform1i(mHTexture, textureType);
     }
 
-    public static void glError(int code,Object index){
+    public static void glError(int code,Object index) {
         if(DEBUG&&code!=0){
             Log.e(TAG,"glError:"+code+"---"+index);
         }
     }
 
     //通过路径加载Assets中的文本内容
-    public static String uRes(Resources mRes,String path){
+    public static String uRes(Resources mRes, String path) {
         StringBuilder result=new StringBuilder();
         try{
             InputStream is=mRes.getAssets().open(path);

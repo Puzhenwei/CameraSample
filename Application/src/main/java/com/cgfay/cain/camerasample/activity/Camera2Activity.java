@@ -250,11 +250,6 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
         });
     }
 
-    private void mediaScanFile(Context context, String fileName) {
-        Uri data = Uri.parse("file:///" + fileName);
-        context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, data));
-    }
-
     private class Camera1Renderer implements Renderer {
 
         private Camera mCamera;
