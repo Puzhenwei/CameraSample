@@ -1,8 +1,6 @@
 package com.cgfay.cain.camerasample.task;
 
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -18,35 +16,36 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
-// 下载任务
-public class DownloaderTask extends AsyncTask<Void, Integer, Long> {
+import static com.cgfay.cain.camerasample.task.Downloader.DownloaderCallback.FailType.Exist;
+import static com.cgfay.cain.camerasample.task.Downloader.DownloaderCallback.FailType.IOError;
+import static com.cgfay.cain.camerasample.task.Downloader.DownloaderCallback.FailType.InComplete;
 
-    private static final String TAG = "DownloaderTask";
+/**
+ * 下载器
+ */
+public class Downloader extends AsyncTask<Void, Integer, Long> {
+
+    private static final String TAG = "Downloader";
 
     private URL mUrl;
     private File mFile;
-    private ProgressDialog mDialog;
     private int mProgress = 0;
+    private int mMax = 0;
     private ProgressReportingOutputStream mOutputStream;
     private Context mContext;
+    private DownloaderCallback mCallback;
 
     /**
      * @param context 上下文
      * @param url   下载地址
      * @param outPath   存放路径
      */
-    public DownloaderTask(Context context, String url, String outPath) {
+    public Downloader(Context context, String url, String outPath) {
         mContext = context;
-        if (context != null) {
-            mDialog = new ProgressDialog(context);
-        } else {
-            mDialog = null;
-        }
         try {
             mUrl = new URL(url);
             String fileName = new File(mUrl.getFile()).getName();
             mFile = new File(outPath, fileName);
-
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
@@ -54,17 +53,8 @@ public class DownloaderTask extends AsyncTask<Void, Integer, Long> {
 
     @Override
     protected void onPreExecute() {
-        if (mDialog != null) {
-            mDialog.setTitle("Downloading...");
-            mDialog.setMessage(mFile.getName());
-            mDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            mDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                @Override
-                public void onCancel(DialogInterface dialog) {
-                    cancel(true);
-                }
-            });
-            mDialog.show();
+        if (mCallback != null) {
+            mCallback.onStart();
         }
     }
 
@@ -75,30 +65,23 @@ public class DownloaderTask extends AsyncTask<Void, Integer, Long> {
 
     @Override
     protected void onProgressUpdate(Integer... values) {
-        if (mDialog == null) {
-            return;
-        }
-
         if (values.length > 1) {
-            int contentLength = values[1];
-            if (contentLength == -1) {
-                mDialog.setIndeterminate(true);
-            } else {
-                mDialog.setMax(contentLength);
-            }
-        } else {
-            mDialog.setProgress(values[0].intValue());
+            mMax = values[1];
+        } else if (mCallback != null) {
+            mCallback.onDownloading(mProgress, mMax);
         }
     }
 
     @Override
     protected void onPostExecute(Long aLong) {
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
-
         if (isCancelled()) {
+            if (mCallback != null) {
+                mCallback.onCancel();
+            }
             return;
+        }
+        if (mCallback != null) {
+            mCallback.onComplete();
         }
     }
 
@@ -112,7 +95,11 @@ public class DownloaderTask extends AsyncTask<Void, Integer, Long> {
             int length = connection.getContentLength();
             if (mFile.exists() && length == mFile.length()) {
                 Log.d(TAG, "file " + mFile.getName() + " already exits!");
-                return 01;
+                // 失败原因回调：文件已存在
+                if (mCallback != null) {
+                    mCallback.onFailed(Exist);
+                }
+                return -1;
             }
             mOutputStream = new ProgressReportingOutputStream(mFile);
             publishProgress(0, length);
@@ -120,10 +107,19 @@ public class DownloaderTask extends AsyncTask<Void, Integer, Long> {
             if (bytesCopied != length && length != -1) {
                 Log.e(TAG, "Download incomplete bytesCopied = "
                         + bytesCopied + ", length = " + length);
+                // 失败原因回调：文件不完整
+                if (mCallback != null) {
+                    mCallback.onFailed(InComplete);
+                }
+                return -1;
             }
             mOutputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
+            // 失败原因回调：IO错误
+            if (mCallback != null) {
+                mCallback.onFailed(IOError);
+            }
         }
         return bytesCopied;
     }
@@ -168,5 +164,26 @@ public class DownloaderTask extends AsyncTask<Void, Integer, Long> {
             mProgress += len;
             publishProgress(mProgress);
         }
+    }
+
+
+    // 添加下载器回调
+    public void addDownloaderCallback(DownloaderCallback callback) {
+        mCallback = callback;
+    }
+
+    public interface DownloaderCallback {
+        // 失败原因
+        enum FailType{ Exist, InComplete, IOError }
+        // 准备下载
+        void onStart();
+        // 下载过程
+        void onDownloading(int progress, int max);
+        // 下载失败
+        void onFailed(FailType type);
+        // 下载成功
+        void onComplete();
+        // 取消下载
+        void onCancel();
     }
 }

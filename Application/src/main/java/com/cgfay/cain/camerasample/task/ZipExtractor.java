@@ -1,7 +1,6 @@
 package com.cgfay.cain.camerasample.task;
 
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
@@ -21,90 +20,82 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-// 压缩包操作任务
-public class ZipExtractorTask extends AsyncTask<Void, Integer, Long> {
+/**
+ * zip解压器
+ */
+public class ZipExtractor extends AsyncTask<Void, Integer, Long> {
 
-    private static final String TAG = "ZipExtractorTask";
+    private static final String TAG = "ZipExtractor";
     private final File mInput;
     private final File mOutput;
-    private final ProgressDialog mDialog;
-    private int mProgress = 0;
+    private int mProgress = 0;  // 解压每个文件进度
+    private int mMax = 0;       // 解压每个文件的大小
     private final Context mContext;
     private volatile boolean mReplaceAll;
     private volatile boolean mReplace = false;
 
     private ExtractorCallback mCallback;
 
-    public ZipExtractorTask(Context context, String in, String out) {
+    public ZipExtractor(Context context, String in, String out) {
         this(context, in, out, false);
     }
 
-    public ZipExtractorTask(Context context, String in, String out, boolean replaceAll) {
+    public ZipExtractor(Context context, String in, String out, boolean replaceAll) {
         mInput = new File(in);
         mOutput = new File(out);
         mContext = context;
-        if (context != null) {
-            mDialog = new ProgressDialog(context);
-        } else {
-            mDialog = null;
-        }
         mReplaceAll = replaceAll;
     }
 
     @Override
     protected Long doInBackground(Void... params) {
-        return unzip();
+        return unzip(mInput);
     }
 
     @Override
     protected void onPostExecute(Long aLong) {
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
         if (isCancelled()) {
+            // 取消解压回调
+            if (mCallback != null) {
+                mCallback.onCancel();
+            }
             return;
+        }
+        // 解压完成回调
+        if (mCallback != null) {
+            mCallback.onComplete();
         }
     }
 
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
-        if (mDialog != null) {
-            mDialog.setTitle("Extracting");
-            mDialog.setMessage(mInput.getName());
-            mDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            mDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                @Override
-                public void onCancel(DialogInterface dialog) {
-                    cancel(true);
-                }
-            });
-            mDialog.show();
+        // 开始解压回调
+        if (mCallback != null) {
+            mCallback.onStartExtracting();
         }
     }
 
 
     @Override
     protected void onProgressUpdate(Integer... values) {
-        if (mDialog != null) {
-            return;
-        }
-
         if (values.length > 1) {
             int max = values[1];
-            mDialog.setMax(max);
-        } else {
-            mDialog.setProgress(values[0].intValue());
+            mMax = max;
+        }
+        // 解压过程回调
+        else if (mCallback != null) {
+            mCallback.onExtracting(mProgress, mMax);
         }
     }
 
-    // 解压
-    private long unzip() {
+    // 解压某个文件
+    private long unzip(File inputFile) {
         long extractedSize = 0L;
         Enumeration<ZipEntry> entries;
         ZipFile zip = null;
         try {
-            zip = new ZipFile(mInput);
+            zip = new ZipFile(inputFile);
             long unCompressedSize = getOriginalSize(zip);
             publishProgress(0, (int)unCompressedSize);
 
@@ -119,7 +110,6 @@ public class ZipExtractorTask extends AsyncTask<Void, Integer, Long> {
                 File destination = new File(mOutput, entry.getName());
                 // 如果父目录不存在，则需要创建一个
                 if (!destination.getParentFile().exists()) {
-                    Log.e(TAG, "make = " + destination.getParentFile().getAbsolutePath());
                     destination.getParentFile().mkdirs();
                 }
 
@@ -170,13 +160,21 @@ public class ZipExtractorTask extends AsyncTask<Void, Integer, Long> {
             }
         } catch (ZipException e) {
             e.printStackTrace();
+            if (mCallback != null) {
+                mCallback.onFailed();
+            }
         } catch (IOException e) {
             e.printStackTrace();
+            if (mCallback != null) {
+                mCallback.onFailed();
+            }
         } finally {
-            try {
-                zip.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (zip != null) {
+                try {
+                    zip.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -247,8 +245,10 @@ public class ZipExtractorTask extends AsyncTask<Void, Integer, Long> {
     }
 
     public interface ExtractorCallback {
+        // 准备解压
+        void onStartExtracting();
         // 解压过程
-        void onExtracting(int progress);
+        void onExtracting(int progress, int max);
         // 解压失败
         void onFailed();
         // 解压成功

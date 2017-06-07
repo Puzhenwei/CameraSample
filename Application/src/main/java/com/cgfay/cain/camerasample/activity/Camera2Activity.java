@@ -2,7 +2,6 @@
 package com.cgfay.cain.camerasample.activity;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -17,16 +16,17 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Process;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -40,15 +40,19 @@ import com.cgfay.cain.camerasample.camera2.FrameCallback;
 import com.cgfay.cain.camerasample.camera2.Renderer;
 import com.cgfay.cain.camerasample.camera2.TextureController;
 import com.cgfay.cain.camerasample.filter.WaterMaskFilter;
+import com.cgfay.cain.camerasample.util.FileUtils;
 import com.cgfay.cain.camerasample.util.GLESUtils;
 import com.cgfay.cain.camerasample.util.PermissionUtils;
+import com.cgfay.cain.camerasample.util.SDCardUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -59,6 +63,7 @@ import static android.hardware.camera2.CameraDevice.TEMPLATE_PREVIEW;
 
 public class Camera2Activity extends AppCompatActivity implements FrameCallback {
 
+    private static final String TAG = "Camsera2Activity";
 
     private static final String CAMERA_PATH = "/DCIM/Camera/";
 
@@ -71,6 +76,11 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
     private int cameraId = 1;
     private int mWidth;
     private int mHeight;
+
+    // 路径列表
+    private String[] folderPath;
+    // 每个路径都是一个压缩包解压后的根目录，因此需要一个文件列表数组
+    private List<List<String>> mPackages = new ArrayList<List<String>>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -88,6 +98,10 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
             }else{
                 mRenderer = new Camera1Renderer();
             }
+            // 获取解压后的路径列表
+            folderPath = getIntent().getStringArrayExtra("folderPath");
+            // 根据路径列表获取文件列表
+            scanPackages();
 
             setContentView(R.layout.activity_camera2);
 
@@ -212,13 +226,19 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
         }).start();
     }
 
-    protected String getSD(){
-        return Environment.getExternalStorageDirectory().getAbsolutePath();
+    /**
+     * 扫描贴图包
+     */
+    private void scanPackages() {
+        for (int i = 0; i < folderPath.length; i++) {
+            ArrayList<String> theme = new ArrayList<String>();
+            // TODO 从解压的路径获取文件名
+        }
     }
 
     // 保存图片
     public void saveBitmap(Bitmap b){
-        String path =  getSD()+ CAMERA_PATH;
+        String path =  SDCardUtils.getInnerSDCardPath()+ CAMERA_PATH;
         File folder = new File(path);
         if (!folder.exists() && !folder.mkdirs()){
             runOnUiThread(new Runnable() {
