@@ -6,6 +6,7 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
 import com.cgfay.cain.camerasample.util.GLESUtils;
+import com.cgfay.cain.camerasample.util.MatrixState;
 
 
 // 添加水印
@@ -15,6 +16,7 @@ public class WaterMaskFilter extends ClearFilter {
     private ClearFilter mFilter;
     private int mWidth, mHeight;
     private int x, y, width, height;
+    private float mOffsetX = 0, mOffsetY = 0;
 
     private int[] mTextures = new int[1];
 
@@ -88,6 +90,10 @@ public class WaterMaskFilter extends ClearFilter {
         }
     }
 
+    /**
+     * 设置水印图片
+     * @param bitmap
+     */
     public void setWaterMask(Bitmap bitmap) {
         if (mBitmap != null) {
             mBitmap.recycle();
@@ -95,10 +101,28 @@ public class WaterMaskFilter extends ClearFilter {
         mBitmap = bitmap;
     }
 
+    /**
+     * 设置位置
+     * @param x
+     * @param y
+     * @param width
+     * @param height
+     */
     public void setPosition(int x, int y, int width, int height) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+    }
+
+
+    /**
+     * 偏移
+     * @param x
+     * @param y
+     */
+    public void setOffset(float x, float y) {
+        mOffsetX = x;
+        mOffsetY = y;
     }
 }

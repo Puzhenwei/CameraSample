@@ -2,6 +2,10 @@ package com.cgfay.cain.camerasample.task;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.util.Log;
+
+import com.cgfay.cain.camerasample.util.FileUtils;
+import com.google.gson.Gson;
 
 import java.io.File;
 
@@ -14,22 +18,18 @@ public class JsonParser extends AsyncTask<Void, Integer, Long> {
     private static final String TAG = "JsonParser";
 
     private File mFile;
-    private Context mContext;
-    private int mProgress = 0;
-    private int mMax = 0;
     private JsonParserCallback mCallback;
+    private Class mClassType;
+    private Object mObject;
 
-    public JsonParser(Context context, String jsonFileName) {
-        mContext = context;
+    /**
+     * JsonParser 构造器
+     * @param jsonFileName  json文件名
+     * @param classType     用于存放json解析结果的类类型
+     */
+    public JsonParser(String jsonFileName, Class classType) {
         mFile = new File(jsonFileName);
-    }
-
-    @Override
-    protected void onPreExecute() {
-        // 开始解析回调
-        if (mCallback != null) {
-            mCallback.onStart();
-        }
+        mClassType = classType;
     }
 
     @Override
@@ -38,54 +38,32 @@ public class JsonParser extends AsyncTask<Void, Integer, Long> {
     }
 
     @Override
-    protected void onProgressUpdate(Integer... values) {
-        if (values.length > 1) {
-            mMax = values[1];
-        } else if (mCallback != null) {
-            mCallback.onParsing(values[0], mMax);
-        }
-    }
-
-    @Override
     protected void onPostExecute(Long aLong) {
         if (isCancelled()) {
-            // 取消解析回调
-            if (mCallback != null) {
-                mCallback.onCancel();
-            }
             return;
         }
 
         // 解析完成回调
         if (mCallback != null) {
-            mCallback.onComplete();
+            mCallback.onComplete(mObject);
         }
     }
 
     // 解析Json
     private Long parsing() {
-
-
-        return Long.valueOf(0);
+        String strJson = FileUtils.readTextFromFile(mFile);
+        Gson json = new Gson();
+        mObject = json.fromJson(strJson, mClassType);
+        return 0L;
     }
 
     // 添加下载器回调
-    public void adJsonParserCallback(JsonParserCallback callback) {
+    public void addJsonParserCallback(JsonParserCallback callback) {
         mCallback = callback;
     }
 
     public interface JsonParserCallback {
-        // 失败原因
-        enum FailType{ Exist, InComplete, IOError }
-        // 准备解析
-        void onStart();
-        // 解析过程
-        void onParsing(int progress, int max);
-        // 解析失败
-        void onFailed(FailType type);
         // 解析成功
-        void onComplete();
-        // 取消解析
-        void onCancel();
+        void onComplete(Object object);
     }
 }

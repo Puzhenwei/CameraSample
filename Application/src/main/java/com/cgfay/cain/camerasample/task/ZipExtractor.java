@@ -1,11 +1,7 @@
 package com.cgfay.cain.camerasample.task;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.AsyncTask;
-import android.os.SystemClock;
-import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -113,45 +109,6 @@ public class ZipExtractor extends AsyncTask<Void, Integer, Long> {
                     destination.getParentFile().mkdirs();
                 }
 
-                // 判断是否需要替换已经存在的文件，根据回调
-                if (destination.exists() && mContext != null && !mReplaceAll) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-                    builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                            mReplace = true;
-                        }
-                    });
-                    builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                            mReplace = false;
-                        }
-                    });
-                    builder.setNeutralButton("全部替换", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                            mReplaceAll = true;
-                        }
-                    });
-                    builder.create().show();
-                }
-
-                // 如果不替换，则追加一个时间后缀
-                boolean result = true;
-                if (!mReplace && !mReplaceAll) {
-                    String fileName = entry.getName() + SystemClock.currentThreadTimeMillis();
-                    result = destination.renameTo(new File(fileName));
-                }
-                // 在不替换的情况下重命名不成功，则丢弃该文件，否则写入文件
-                // 在替换的情况下，直接写入文件
-                if (!result) {
-                    continue;
-                }
-                
                 // 写入文件
                 ProgressReportingOutputStream outputStream =
                         new ProgressReportingOutputStream(destination);
@@ -201,7 +158,6 @@ public class ZipExtractor extends AsyncTask<Void, Integer, Long> {
         BufferedOutputStream outputStream = new BufferedOutputStream(output, 1024 * 8);
         int count = 0, n = 0;
         try {
-
             while((n = inputStream.read(buffer, 0, 1024 * 8)) != -1) {
                 outputStream.write(buffer, 0, n);
                 count += n;

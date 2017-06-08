@@ -169,7 +169,7 @@ public class TextureController implements GLSurfaceView.Renderer {
             mGroupFilter.draw();
 
             //显示传入的texture上，一般是显示在屏幕上
-            GLES20.glViewport(0,0,mWindowSize.x,mWindowSize.y);
+            GLES20.glViewport(0,0,mWindowSize.x, mWindowSize.y);
             mShowFilter.setMatrix(SM);
             mShowFilter.setTextureId(mGroupFilter.getOutputTexture());
             mShowFilter.draw();
@@ -186,6 +186,21 @@ public class TextureController implements GLSurfaceView.Renderer {
      */
     public void addFilter(Filter filter){
         mGroupFilter.addFilter(filter);
+    }
+
+    /**
+     * 移除某个滤镜
+     * @param filter
+     */
+    public void removeFilter(Filter filter) {
+        mGroupFilter.removeFilter(filter);
+    }
+
+    /**
+     * 清除所有滤镜
+     */
+    public void clearAllFilters() {
+        mGroupFilter.clearAll();
     }
 
     /**

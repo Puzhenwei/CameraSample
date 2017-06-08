@@ -65,6 +65,9 @@ public class GroupFilter extends Filter {
         size = 0;
     }
 
+    /**
+     * 绘制过程
+     */
     public void draw() {
         updateFilter();
         textureIndex = 0;
@@ -120,6 +123,10 @@ public class GroupFilter extends Filter {
         createFrameBuffer();
     }
 
+    /**
+     * 创建帧缓冲区
+     * @return
+     */
     private boolean createFrameBuffer() {
         GLES20.glGenFramebuffers(1, frame, 0);
         GLES20.glGenRenderbuffers(1, render, 0);
@@ -135,10 +142,10 @@ public class GroupFilter extends Filter {
                 GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, texture[0], 0);
         GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER,
                 GLES20.GL_DEPTH_ATTACHMENT, GLES20.GL_RENDERBUFFER, render[0]);
+
         unBindTexture();
         return false;
     }
-
 
     /**
      * 生成Texture
@@ -165,11 +172,17 @@ public class GroupFilter extends Filter {
         }
     }
 
+    /**
+     * 解绑texture
+     */
     private void unBindTexture() {
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
         GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, 0);
     }
 
+    /**
+     * 删除帧缓冲区
+     */
     private void deleteFrameBuffer() {
         GLES20.glDeleteRenderbuffers(1, render, 0);
         GLES20.glDeleteFramebuffers(1, frame, 0);

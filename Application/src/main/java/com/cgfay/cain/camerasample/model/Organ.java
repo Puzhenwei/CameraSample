@@ -5,7 +5,7 @@ import java.util.List;
 // 每个器官的Json对象
 public class Organ {
     private List<Frames> frames;
-    private List<Meta> meta;
+    private Meta meta;
 
     public List<Frames> getFrames() {
         return frames;
@@ -15,11 +15,11 @@ public class Organ {
         this.frames = frames;
     }
 
-    public List<Meta> getMeta() {
+    public Meta getMeta() {
         return meta;
     }
 
-    public void setMeta(List<Meta> meta) {
+    public void setMeta(Meta meta) {
         this.meta = meta;
     }
 

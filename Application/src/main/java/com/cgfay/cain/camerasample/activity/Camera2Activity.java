@@ -5,6 +5,10 @@ import android.Manifest;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapRegionDecoder;
+import android.graphics.Matrix;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
@@ -40,6 +44,13 @@ import com.cgfay.cain.camerasample.camera2.FrameCallback;
 import com.cgfay.cain.camerasample.camera2.Renderer;
 import com.cgfay.cain.camerasample.camera2.TextureController;
 import com.cgfay.cain.camerasample.filter.WaterMaskFilter;
+import com.cgfay.cain.camerasample.model.Facer;
+import com.cgfay.cain.camerasample.model.Frame;
+import com.cgfay.cain.camerasample.model.Meta;
+import com.cgfay.cain.camerasample.model.Organ;
+import com.cgfay.cain.camerasample.model.Sticker;
+import com.cgfay.cain.camerasample.task.JsonParser;
+import com.cgfay.cain.camerasample.util.DisplayUtils;
 import com.cgfay.cain.camerasample.util.FileUtils;
 import com.cgfay.cain.camerasample.util.GLESUtils;
 import com.cgfay.cain.camerasample.util.PermissionUtils;
@@ -50,7 +61,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -79,8 +89,6 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
 
     // 路径列表
     private String[] folderPath;
-    // 每个路径都是一个压缩包解压后的根目录，因此需要一个文件列表数组
-    private List<List<String>> mPackages = new ArrayList<List<String>>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -139,11 +147,6 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
             mController = new TextureController(Camera2Activity.this);
             mController.setShowType(GLESUtils.TYPE_CENTERCROP);
 
-            // 添加水印
-            WaterMaskFilter filter = new WaterMaskFilter(getResources());
-            filter.setWaterMask(BitmapFactory.decodeResource(getResources(), R.mipmap.huaji));
-            filter.setPosition(300, 150, 441, 419);
-            mController.addFilter(filter);
             // 控制帧率回调
             mController.setFrameCallback(720, 1280, Camera2Activity.this);
             mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
@@ -230,10 +233,107 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
      * 扫描贴图包
      */
     private void scanPackages() {
+        // 遍历所有文件目录
         for (int i = 0; i < folderPath.length; i++) {
-            ArrayList<String> theme = new ArrayList<String>();
-            // TODO 从解压的路径获取文件名
+            List<String> theme = FileUtils.getAbsolutePathlist(folderPath[i]);
+            // 将zip解压得到的json文件和png文件提取出来
+            for (int j = 0; j < theme.size(); j++) {
+                // 如果是sticker.json文件，则解析该文件
+                if (theme.get(j).endsWith("sticker.json")) {
+                    // 直接获取当前的目录，后续解析头、鼻子、前景、背景json和图片
+                    final String path = theme.get(j).replace("sticker.json", "");
+                    // 解析json文件
+                    JsonParser parser = new JsonParser(theme.get(j), Sticker.class);
+                    parser.addJsonParserCallback(new JsonParser.JsonParserCallback() {
+                        @Override
+                        public void onComplete(Object object) {
+                            // 解析成功后，进入添加贴纸过程
+                            addStickerToTexture(path, (Sticker) object);
+                        }
+                    });
+                    parser.execute();
+                    break;
+                }
+            }
         }
+    }
+
+    /**
+     * 给Texture添加Sticker贴纸
+     * @param filePath  sticker.json文件的路径
+     * @param sticker   通过json生成的Sticker对象
+     */
+    private void addStickerToTexture(final String filePath, Sticker sticker) {
+        for (int i = 0; i < sticker.getRes().size(); i++) {
+            final Facer facer = sticker.getRes().get(i);
+            List<String> jsons = facer.getI();
+            JsonParser parser = new JsonParser(filePath + File.separator + jsons.get(0), Organ.class);
+            parser.addJsonParserCallback(new JsonParser.JsonParserCallback() {
+                @Override
+                public void onComplete(Object object) {
+                    addTexture(facer, (Organ) object,
+                            filePath + File.separator + facer.getD().get(0));
+                }
+            });
+            parser.execute();
+        }
+    }
+
+    /**
+     * 添加texture
+     * @param facer     脸部数据
+     * @param organ     脸部器官数据
+     * @param bitmapPath    图片地址
+     */
+    private void addTexture(Facer facer, Organ organ, String bitmapPath) {
+        // 是否允许动画
+        if (!facer.isGif()) {
+            Frame frame = organ.getFrames().get(0).getFrame();
+            float scale = facer.getScale();
+            try {
+                // 解析大图中的部分区域
+                BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(bitmapPath, false);
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inPreferredConfig = Bitmap.Config.RGB_565;
+                Rect rect = new Rect(frame.getX(), frame.getY(),
+                        frame.getX() + frame.getW(),
+                        frame.getY() + frame.getH());
+                Bitmap temp = decoder.decodeRegion(rect, options);
+                Matrix matrix = new Matrix();
+                if (scale == 0) {
+                    float scaleW = temp.getWidth() / DisplayUtils.getScreenWidth(Camera2Activity.this);
+                    float scaleH = temp.getHeight() / DisplayUtils.getScreenHeight(Camera2Activity.this);
+                    scale = scaleW > scaleH ? scaleW : scaleH;
+                }
+                matrix.postScale(scale, scale);
+                // 根据返回的数据进行缩放
+                Bitmap bitmap = Bitmap.createBitmap(temp, 0, 0,
+                        temp.getWidth(), temp.getHeight(), matrix, true);
+
+
+                Log.d(TAG, bitmapPath);
+                // 添加贴图
+                WaterMaskFilter filter = new WaterMaskFilter(getResources());
+                filter.setWaterMask(bitmap);
+                filter.setOffset(facer.getOffset().get(0), facer.getOffset().get(1));
+                filter.setPosition(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                mController.addFilter(filter);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } else {
+            addGifTexture(facer, organ, bitmapPath);
+        }
+    }
+
+    /**
+     * 添加gif 动画的texture
+     */
+    private void addGifTexture(Facer facer, Organ organ, String bitmapPath) {
+        // 清除原来的所有Filters
+        mController.clearAllFilters();
+        // 添加所有的Filters
     }
 
     // 保存图片

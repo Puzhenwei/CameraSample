@@ -5,6 +5,6 @@ uniform mat4 vMatrix;
 varying vec2 textureCoordinate;
 
 void main(){
-    gl_Position = vMatrix*vPosition;
+    gl_Position = vMatrix * vPosition;
     textureCoordinate = vCoord;
 }

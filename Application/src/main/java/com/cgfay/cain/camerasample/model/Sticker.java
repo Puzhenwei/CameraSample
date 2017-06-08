@@ -2,7 +2,7 @@ package com.cgfay.cain.camerasample.model;
 
 import java.util.List;
 
-public class Striker {
+public class Sticker {
     private String id;
     private String name;
     private int sw;

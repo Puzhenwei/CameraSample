@@ -1,10 +1,15 @@
 package com.cgfay.cain.camerasample.util;
 
 import android.content.Context;
+import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -13,6 +18,8 @@ import java.util.List;
 
 
 public class FileUtils {
+
+    private static final String TAG = "FileUtils";
 
     private static final int BUFFER_SIZE = 1024 * 8;
 
@@ -205,5 +212,64 @@ public class FileUtils {
         file.delete();
     }
 
+    /**
+     * 获取某个路径下的所有文件路径
+     * @param absolutePath    需要查找的绝对路径
+     */
+    public static List<String> getAbsolutePathlist(String absolutePath) {
+        List<String> fileNames = new ArrayList<String>();
+        File file = new File(absolutePath);
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            // 递归遍历
+            for (int i = 0; i < files.length; i++) {
+                List<String> names = getAbsolutePathlist(files[i].getAbsolutePath());
+                fileNames.addAll(names);
+            }
+        } else {
+            fileNames.add(file.getAbsolutePath());
+        }
 
+        return fileNames;
+    }
+
+    /**
+     *
+     * @param file
+     * @return
+     */
+    public static String readTextFromFile(File file) {
+        String outStr = "";
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                outStr += line;
+            }
+            bufferedReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            outStr = "";
+        }
+        return outStr;
+    }
+
+
+    /**
+     * 将字符串写入到输出文件中
+     * @param outputFile    输出文件
+     * @param strInput      需要写入的字符串内容
+     * @return
+     */
+    public static boolean writeTextToFile(File outputFile, String strInput) {
+        boolean success = true;
+        try {
+            FileWriter writer = new FileWriter(outputFile);
+            writer.write(strInput);
+        } catch (IOException e) {
+            success = false;
+            e.printStackTrace();
+        }
+        return success;
+    }
 }
