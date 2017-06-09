@@ -39,74 +39,132 @@ public class GLESUtils {
         return matrix;
     }
 
+    /**
+     * 根据输入矩阵和类型，计算输出矩阵
+     * @param matrix    输入矩阵
+     * @param type      类型
+     * @param imgWidth  图片宽度
+     * @param imgHeight 图片高度
+     * @param viewWidth 视图宽度
+     * @param viewHeight    视图高度
+     */
     public static void getMatrix(float[] matrix,
                                  int type,
                                  int imgWidth,
                                  int imgHeight,
                                  int viewWidth,
-                                 int viewHeight){
+                                 int viewHeight) {
 
         if (imgHeight > 0 && imgWidth > 0 && viewWidth > 0 && viewHeight > 0) {
             float[] projection = new float[16];
             float[] camera = new float[16];
             if (type == TYPE_FITXY) {
-                Matrix.orthoM(projection,0,-1,1,-1,1,1,3);
-                Matrix.setLookAtM(camera,0,0,0,1,0,0,0,0,1,0);
-                Matrix.multiplyMM(matrix,0,projection,0,camera,0);
+                Matrix.orthoM(projection, 0, -1, 1, -1, 1, 1, 3);
+                Matrix.setLookAtM(camera, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0);
+                Matrix.multiplyMM(matrix, 0, projection, 0, camera, 0);
             }
-            float sWhView = (float) viewWidth/viewHeight;
-            float sWhImg = (float) imgWidth/imgHeight;
+            float sWhView = (float) viewWidth / viewHeight;
+            float sWhImg = (float) imgWidth / imgHeight;
             if (sWhImg>sWhView) {
-                switch (type){
+                switch (type) {
                     case TYPE_CENTERCROP:
-                        Matrix.orthoM(projection,0,-sWhView/sWhImg,sWhView/sWhImg,-1,1,1,3);
+                        Matrix.orthoM(projection, 0, -sWhView/sWhImg, sWhView/sWhImg, -1, 1, 1, 3);
                         break;
                     case TYPE_CENTERINSIDE:
-                        Matrix.orthoM(projection,0,-1,1,-sWhImg/sWhView,sWhImg/sWhView,1,3);
+                        Matrix.orthoM(projection, 0, -1, 1, -sWhImg/sWhView, sWhImg/sWhView, 1, 3);
                         break;
                     case TYPE_FITSTART:
-                        Matrix.orthoM(projection,0,-1,1,1-2*sWhImg/sWhView,1,1,3);
+                        Matrix.orthoM(projection, 0, -1, 1, 1 - 2 * sWhImg/sWhView, 1, 1, 3);
                         break;
                     case TYPE_FITEND:
-                        Matrix.orthoM(projection,0,-1,1,-1,2*sWhImg/sWhView-1,1,3);
+                        Matrix.orthoM(projection, 0, -1, 1, -1, 2 * sWhImg/sWhView - 1, 1, 3);
                         break;
                 }
             } else {
                 switch (type) {
                     case TYPE_CENTERCROP:
-                        Matrix.orthoM(projection,0,-1,1,-sWhImg/sWhView,sWhImg/sWhView,1,3);
+                        Matrix.orthoM(projection, 0, -1, 1, -sWhImg/sWhView, sWhImg/sWhView, 1, 3);
                         break;
                     case TYPE_CENTERINSIDE:
-                        Matrix.orthoM(projection,0,-sWhView/sWhImg,sWhView/sWhImg,-1,1,1,3);
+                        Matrix.orthoM(projection, 0, -sWhView/sWhImg, sWhView/sWhImg, -1, 1, 1, 3);
                         break;
                     case TYPE_FITSTART:
-                        Matrix.orthoM(projection,0,-1,2*sWhView/sWhImg-1,-1,1,1,3);
+                        Matrix.orthoM(projection, 0, -1, 2 * sWhView/sWhImg - 1, -1, 1, 1, 3);
                         break;
                     case TYPE_FITEND:
-                        Matrix.orthoM(projection,0,1-2*sWhView/sWhImg,1,-1,1,1,3);
+                        Matrix.orthoM(projection, 0, 1 - 2 * sWhView/sWhImg, 1, -1, 1, 1, 3);
                         break;
                 }
             }
-            Matrix.setLookAtM(camera,0,0,0,1,0,0,0,0,1,0);
-            Matrix.multiplyMM(matrix,0,projection,0,camera,0);
+            Matrix.setLookAtM(camera, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0);
+            Matrix.multiplyMM(matrix, 0, projection, 0, camera, 0);
         }
     }
 
-    public static void getCenterInsideMatrix(float[] matrix,int imgWidth,int imgHeight,int viewWidth,int
-            viewHeight){
-        if(imgHeight>0&&imgWidth>0&&viewWidth>0&&viewHeight>0){
-            float sWhView=(float)viewWidth/viewHeight;
-            float sWhImg=(float)imgWidth/imgHeight;
-            float[] projection=new float[16];
-            float[] camera=new float[16];
-            if(sWhImg>sWhView){
-                Matrix.orthoM(projection,0,-1,1,-sWhImg/sWhView,sWhImg/sWhView,1,3);
+    /**
+     * 获取类似ImageView 的 Center Inside 模式的变换矩阵
+     * @param matrix    输入矩阵
+     * @param imgWidth  图片宽度
+     * @param imgHeight 图片高度
+     * @param viewWidth 视图宽度
+     * @param viewHeight    视图高度
+     */
+    public static void getCenterInsideMatrix(float[] matrix,
+                                             int imgWidth,
+                                             int imgHeight,
+                                             int viewWidth,
+                                             int viewHeight) {
+
+        if(imgHeight > 0 && imgWidth > 0 && viewWidth > 0 && viewHeight > 0) {
+            float sWhView = (float)viewWidth/viewHeight;
+            float sWhImg = (float)imgWidth/imgHeight;
+            float[] projection = new float[16];
+            float[] camera = new float[16];
+            if (sWhImg > sWhView) {
+                Matrix.orthoM(projection, 0, -1, 1, -sWhImg/sWhView, sWhImg/sWhView, 1, 3);
             }else{
-                Matrix.orthoM(projection,0,-sWhView/sWhImg,sWhView/sWhImg,-1,1,1,3);
+                Matrix.orthoM(projection, 0, -sWhView/sWhImg, sWhView/sWhImg, -1, 1, 1, 3);
             }
-            Matrix.setLookAtM(camera,0,0,0,1,0,0,0,0,1,0);
-            Matrix.multiplyMM(matrix,0,projection,0,camera,0);
+            Matrix.setLookAtM(camera, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0);
+            Matrix.multiplyMM(matrix, 0, projection, 0, camera, 0);
         }
+    }
+
+    /**
+     * 平移
+     * @param matrix
+     * @param x
+     * @param y
+     * @return
+     */
+    public static float[] translate(float[] matrix, float x, float y) {
+        return translate(matrix, x, y, 0);
+    }
+
+    /**
+     * 平移
+     * @param matrix 输入矩阵
+     * @param x x轴平移量
+     * @param y y轴平移量
+     * @param z z轴平移量
+     * @return 平移后的矩阵
+     */
+    public static float[] translate(float[] matrix, float x, float y, float z) {
+        return translate(matrix, 0, x, y, z);
+    }
+
+    /**
+     * 平移
+     * @param matrix 输入矩阵
+     * @param offset 偏移
+     * @param x x轴平移量
+     * @param y y轴平移量
+     * @param z z轴平移量
+     * @return 平移后的矩阵
+     */
+    public static float[] translate(float[] matrix, int offset, float x, float y, float z) {
+        Matrix.translateM(matrix, offset, x, y, z);
+        return matrix;
     }
 
     /**
@@ -179,7 +237,7 @@ public class GLESUtils {
      * @return
      */
     public static float[] getOriginalMatrix(){
-        return new float[]{
+        return new float[] {
                 1,0,0,0,
                 0,1,0,0,
                 0,0,1,0,
@@ -187,6 +245,9 @@ public class GLESUtils {
         };
     }
 
+    /**
+     * 设置Texture参数
+     */
     public static void useTexParameter(){
         //设置缩小过滤为使用纹理中坐标最接近的一个像素的颜色作为需要绘制的像素颜色
         GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,GLES20.GL_NEAREST);
@@ -198,7 +259,16 @@ public class GLESUtils {
         GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T,GLES20.GL_CLAMP_TO_EDGE);
     }
 
-    public static void useTexParameter(int gl_wrap_s,int gl_wrap_t,int gl_min_filter,
+    /**
+     * 设置texture参数
+     * @param gl_wrap_s
+     * @param gl_wrap_t
+     * @param gl_min_filter
+     * @param gl_mag_filter
+     */
+    public static void useTexParameter(int gl_wrap_s,
+                                       int gl_wrap_t,
+                                       int gl_min_filter,
                                        int gl_mag_filter){
         GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S,gl_wrap_s);
         GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T,gl_wrap_t);
@@ -206,25 +276,46 @@ public class GLESUtils {
         GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER,gl_mag_filter);
     }
 
+    /**
+     * 创建Texture
+     * @param size
+     * @param textures
+     * @param start
+     * @param gl_format
+     * @param width
+     * @param height
+     */
     public static void genTexturesWithParameter(int size,int[] textures,int start,
                                                 int gl_format,int width,int height){
+        // 创建Texture
         GLES20.glGenTextures(size, textures, start);
+        // 绑定Texture
         for (int i = 0; i < size; i++) {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[i]);
-            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0,gl_format, width, height,
-                    0, gl_format, GLES20.GL_UNSIGNED_BYTE, null);
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, gl_format,
+                    width, height, 0, gl_format, GLES20.GL_UNSIGNED_BYTE, null);
+            // 设置Texture 参数
             useTexParameter();
         }
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,0);
+        // 取消绑定
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
     }
 
-    public static void bindFrameTexture(int frameBufferId,int textureId){
+    /**
+     * 绑定FrameBuffer和Texture
+     * @param frameBufferId
+     * @param textureId
+     */
+    public static void bindFrameTexture(int frameBufferId, int textureId){
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBufferId);
         GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0,
                 GLES20.GL_TEXTURE_2D, textureId, 0);
     }
 
+    /**
+     * 解绑FrameBuffer
+     */
     public static void unBindFrameBuffer(){
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
     }
 }

@@ -2,15 +2,21 @@ package com.cgfay.cain.camerasample.filter;
 
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
+import android.util.Log;
 
 import com.cgfay.cain.camerasample.util.GLESUtils;
-import com.cgfay.cain.camerasample.util.MatrixState;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 
 // 添加水印
 public class WaterMaskFilter extends ClearFilter {
+
+    private static final String TAG = "WaterMaskFilter";
 
     private Bitmap mBitmap;
     private ClearFilter mFilter;
@@ -20,9 +26,9 @@ public class WaterMaskFilter extends ClearFilter {
 
     private int[] mTextures = new int[1];
 
-    public WaterMaskFilter(Resources mRes) {
-        super(mRes);
-        mFilter = new ClearFilter(mRes) {
+    public WaterMaskFilter(Resources resources) {
+        super(resources);
+        mFilter = new ClearFilter(resources) {
             @Override
             protected void onClear() {
 
@@ -124,5 +130,10 @@ public class WaterMaskFilter extends ClearFilter {
     public void setOffset(float x, float y) {
         mOffsetX = x;
         mOffsetY = y;
+    }
+
+    @Override
+    protected void setExpandData() {
+        super.setExpandData();
     }
 }

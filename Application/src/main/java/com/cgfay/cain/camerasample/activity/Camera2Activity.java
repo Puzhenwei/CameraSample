@@ -7,7 +7,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Matrix;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
@@ -25,7 +24,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Process;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
@@ -44,17 +42,19 @@ import com.cgfay.cain.camerasample.camera2.FrameCallback;
 import com.cgfay.cain.camerasample.camera2.Renderer;
 import com.cgfay.cain.camerasample.camera2.TextureController;
 import com.cgfay.cain.camerasample.filter.WaterMaskFilter;
-import com.cgfay.cain.camerasample.model.Facer;
-import com.cgfay.cain.camerasample.model.Frame;
-import com.cgfay.cain.camerasample.model.Meta;
-import com.cgfay.cain.camerasample.model.Organ;
-import com.cgfay.cain.camerasample.model.Sticker;
+import com.cgfay.cain.camerasample.data.Facer;
+import com.cgfay.cain.camerasample.data.Frame;
+import com.cgfay.cain.camerasample.data.Organ;
+import com.cgfay.cain.camerasample.data.Sticker;
 import com.cgfay.cain.camerasample.task.JsonParser;
+import com.cgfay.cain.camerasample.task.MediaSaver;
+import com.cgfay.cain.camerasample.task.MediaSaverTask;
 import com.cgfay.cain.camerasample.util.DisplayUtils;
 import com.cgfay.cain.camerasample.util.FileUtils;
 import com.cgfay.cain.camerasample.util.GLESUtils;
 import com.cgfay.cain.camerasample.util.PermissionUtils;
 import com.cgfay.cain.camerasample.util.SDCardUtils;
+import com.cgfay.cain.camerasample.util.StickerUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -87,6 +87,10 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
     private int mWidth;
     private int mHeight;
 
+    private MediaSaver mMediaSaver;
+    // 用于标志保存照片的队列占用达到最大值
+    private volatile boolean mMediaMemoryFull;
+
     // 路径列表
     private String[] folderPath;
 
@@ -101,6 +105,7 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
         @Override
         public void run() {
 
+            // 根据SDK版本判断使用哪一版的渲染器
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 mRenderer = new Camera2Renderer();
             }else{
@@ -108,8 +113,6 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
             }
             // 获取解压后的路径列表
             folderPath = getIntent().getStringArrayExtra("folderPath");
-            // 根据路径列表获取文件列表
-            scanPackages();
 
             setContentView(R.layout.activity_camera2);
 
@@ -122,7 +125,7 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
             mBtnViewPhoto.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                    viewPhoto();
                 }
             });
 
@@ -140,15 +143,19 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
             mBtnSwitchCamera.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                    switchCamera();
                 }
             });
 
             mController = new TextureController(Camera2Activity.this);
             mController.setShowType(GLESUtils.TYPE_CENTERCROP);
 
-            // 控制帧率回调
+            // 控制帧回调
             mController.setFrameCallback(720, 1280, Camera2Activity.this);
+            // 根据路径列表获取文件列表
+            StickerUtils.scanPackages(Camera2Activity.this, mController, folderPath);
+
+            // 初始化SurfaceView参数
             mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
                 @Override
                 public void surfaceCreated(SurfaceHolder holder) {
@@ -172,6 +179,21 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
                 }
             });
 
+            // 多媒体存储器初始化，主要用于存储图片和视频
+            mMediaSaver = new MediaSaverTask(getContentResolver());
+            mMediaMemoryFull = false;
+            mMediaSaver.setQueueListener(new MediaSaver.QueueListener() {
+                @Override
+                public void onQueueStatus(boolean full) {
+                    // 保存图片任务使用的内存达到最大值时，主要是连拍照片时，需要维持一个队列
+                    if (full) {
+                        mMediaMemoryFull = true;
+                    } else {
+                        mMediaMemoryFull = false;
+                    }
+                }
+            });
+            Log.d(TAG, "path : " + (Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString()+ File.separator + "Camera"));
         }
     };
 
@@ -220,8 +242,9 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
         new Thread(new Runnable() {
             @Override
             public void run() {
-                Bitmap bitmap=Bitmap.createBitmap(720,1280, Bitmap.Config.ARGB_8888);
-                ByteBuffer b=ByteBuffer.wrap(bytes);
+                // TODO 这里的bytes数据可以直接存放而不用转成Bitmap再做，迟点修改
+                Bitmap bitmap = Bitmap.createBitmap(720,1280, Bitmap.Config.ARGB_8888);
+                ByteBuffer b = ByteBuffer.wrap(bytes);
                 bitmap.copyPixelsFromBuffer(b);
                 saveBitmap(bitmap);
                 bitmap.recycle();
@@ -230,114 +253,19 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
     }
 
     /**
-     * 扫描贴图包
+     * 查看照片
      */
-    private void scanPackages() {
-        // 遍历所有文件目录
-        for (int i = 0; i < folderPath.length; i++) {
-            List<String> theme = FileUtils.getAbsolutePathlist(folderPath[i]);
-            // 将zip解压得到的json文件和png文件提取出来
-            for (int j = 0; j < theme.size(); j++) {
-                // 如果是sticker.json文件，则解析该文件
-                if (theme.get(j).endsWith("sticker.json")) {
-                    // 直接获取当前的目录，后续解析头、鼻子、前景、背景json和图片
-                    final String path = theme.get(j).replace("sticker.json", "");
-                    // 解析json文件
-                    JsonParser parser = new JsonParser(theme.get(j), Sticker.class);
-                    parser.addJsonParserCallback(new JsonParser.JsonParserCallback() {
-                        @Override
-                        public void onComplete(Object object) {
-                            // 解析成功后，进入添加贴纸过程
-                            addStickerToTexture(path, (Sticker) object);
-                        }
-                    });
-                    parser.execute();
-                    break;
-                }
-            }
-        }
+    private void viewPhoto() {
+
     }
 
     /**
-     * 给Texture添加Sticker贴纸
-     * @param filePath  sticker.json文件的路径
-     * @param sticker   通过json生成的Sticker对象
+     * 保存图片
+     * @param b bitmap数据
      */
-    private void addStickerToTexture(final String filePath, Sticker sticker) {
-        for (int i = 0; i < sticker.getRes().size(); i++) {
-            final Facer facer = sticker.getRes().get(i);
-            List<String> jsons = facer.getI();
-            JsonParser parser = new JsonParser(filePath + File.separator + jsons.get(0), Organ.class);
-            parser.addJsonParserCallback(new JsonParser.JsonParserCallback() {
-                @Override
-                public void onComplete(Object object) {
-                    addTexture(facer, (Organ) object,
-                            filePath + File.separator + facer.getD().get(0));
-                }
-            });
-            parser.execute();
-        }
-    }
+    private void saveBitmap(Bitmap b) {
+        // TODO 改写保存照片的代码，使用lruCache和队列防止OOM
 
-    /**
-     * 添加texture
-     * @param facer     脸部数据
-     * @param organ     脸部器官数据
-     * @param bitmapPath    图片地址
-     */
-    private void addTexture(Facer facer, Organ organ, String bitmapPath) {
-        // 是否允许动画
-        if (!facer.isGif()) {
-            Frame frame = organ.getFrames().get(0).getFrame();
-            float scale = facer.getScale();
-            try {
-                // 解析大图中的部分区域
-                BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(bitmapPath, false);
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inPreferredConfig = Bitmap.Config.RGB_565;
-                Rect rect = new Rect(frame.getX(), frame.getY(),
-                        frame.getX() + frame.getW(),
-                        frame.getY() + frame.getH());
-                Bitmap temp = decoder.decodeRegion(rect, options);
-                Matrix matrix = new Matrix();
-                if (scale == 0) {
-                    float scaleW = temp.getWidth() / DisplayUtils.getScreenWidth(Camera2Activity.this);
-                    float scaleH = temp.getHeight() / DisplayUtils.getScreenHeight(Camera2Activity.this);
-                    scale = scaleW > scaleH ? scaleW : scaleH;
-                }
-                matrix.postScale(scale, scale);
-                // 根据返回的数据进行缩放
-                Bitmap bitmap = Bitmap.createBitmap(temp, 0, 0,
-                        temp.getWidth(), temp.getHeight(), matrix, true);
-
-
-                Log.d(TAG, bitmapPath);
-                // 添加贴图
-                WaterMaskFilter filter = new WaterMaskFilter(getResources());
-                filter.setWaterMask(bitmap);
-                filter.setOffset(facer.getOffset().get(0), facer.getOffset().get(1));
-                filter.setPosition(0, 0, bitmap.getWidth(), bitmap.getHeight());
-                mController.addFilter(filter);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        } else {
-            addGifTexture(facer, organ, bitmapPath);
-        }
-    }
-
-    /**
-     * 添加gif 动画的texture
-     */
-    private void addGifTexture(Facer facer, Organ organ, String bitmapPath) {
-        // 清除原来的所有Filters
-        mController.clearAllFilters();
-        // 添加所有的Filters
-    }
-
-    // 保存图片
-    public void saveBitmap(Bitmap b){
         String path =  SDCardUtils.getInnerSDCardPath()+ CAMERA_PATH;
         File folder = new File(path);
         if (!folder.exists() && !folder.mkdirs()){
@@ -370,6 +298,16 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
         });
     }
 
+    /**
+     * 切换摄像头
+     */
+    private void switchCamera() {
+
+    }
+
+    /**
+     * 旧版camera 渲染器
+     */
     private class Camera1Renderer implements Renderer {
 
         private Camera mCamera;
@@ -421,6 +359,9 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
     }
 
 
+    /**
+     * Android 5.0 以后的渲染器
+     */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private class Camera2Renderer implements Renderer {
 

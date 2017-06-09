@@ -27,8 +27,8 @@ public class BaseFilter extends Filter {
     }
 
     @Override
-    protected void onSetExpandData() {
-        super.onSetExpandData();
+    protected void setExpandData() {
+        super.setExpandData();
         GLES20.glUniformMatrix4fv(mHCoordMatrix, 1, false, mCoordMatrix, 0);
     }
 

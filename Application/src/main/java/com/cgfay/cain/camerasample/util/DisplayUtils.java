@@ -6,8 +6,7 @@ import android.view.WindowManager;
 
 public class DisplayUtils {
 
-    private DisplayUtils() {
-    }
+    private DisplayUtils() {}
 
     /**
      * 获取屏幕宽度

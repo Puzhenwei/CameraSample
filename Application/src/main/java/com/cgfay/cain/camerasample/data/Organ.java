@@ -1,4 +1,4 @@
-package com.cgfay.cain.camerasample.model;
+package com.cgfay.cain.camerasample.data;
 
 import java.util.List;
 

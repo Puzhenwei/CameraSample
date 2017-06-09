@@ -1,4 +1,4 @@
-package com.cgfay.cain.camerasample.model;
+package com.cgfay.cain.camerasample.data;
 
 /**
  * Created by Administrator on 2017/6/7.
