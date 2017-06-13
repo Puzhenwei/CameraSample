@@ -59,7 +59,7 @@ public class TextureController implements GLSurfaceView.Renderer {
     private boolean isShoot=false;                              //一次拍摄flag
     private ByteBuffer[] outPutBuffer = new ByteBuffer[3];      //用于存储回调数据的buffer
     private FrameCallback mFrameCallback;                       //回调
-    private int frameCallbackWidth, frameCallbackHeight;        //回调数据的宽高
+    private int mFrameCallbackWidth, mFrameCallbackHeight;        //回调数据的宽高
     private int indexOutput = 0;                                //回调数据使用的buffer索引
 
     public TextureController(Context context) {
@@ -75,7 +75,11 @@ public class TextureController implements GLSurfaceView.Renderer {
     public void surfaceChanged(int width,int height){
         this.mWindowSize.x = width;
         this.mWindowSize.y = height;
-        mGLView.surfaceChanged(null,0,width,height);
+
+        // TODO 这里需要处理相机的排布问题
+        mFrameCallbackWidth = width;
+        mFrameCallbackHeight = height;
+        mGLView.surfaceChanged(null, 0, width, height);
     }
 
     public void surfaceDestroyed(){
@@ -136,7 +140,7 @@ public class TextureController implements GLSurfaceView.Renderer {
 
         deleteFrameBuffer();
         GLES20.glGenFramebuffers(1,mExportFrame,0);
-        GLESUtils.genTexturesWithParameter(1,mExportTexture,0,GLES20.GL_RGBA,mDataSize.x,
+        GLESUtils.genTexturesWithParameter(1, mExportTexture, 0, GLES20.GL_RGBA, mDataSize.x,
             mDataSize.y);
     }
 
@@ -247,9 +251,9 @@ public class TextureController implements GLSurfaceView.Renderer {
      * @param frameCallback 帧回调
      */
     public void setFrameCallback(int width, int height, FrameCallback frameCallback) {
-        this.frameCallbackWidth = width;
-        this.frameCallbackHeight = height;
-        if (frameCallbackWidth > 0 && frameCallbackHeight > 0) {
+        this.mFrameCallbackWidth = width;
+        this.mFrameCallbackHeight = height;
+        if (mFrameCallbackWidth > 0 && mFrameCallbackHeight > 0) {
             if (outPutBuffer != null) {
                 outPutBuffer = new ByteBuffer[3];
             }
@@ -264,11 +268,11 @@ public class TextureController implements GLSurfaceView.Renderer {
      * 计算变换
      */
     private void calculateCallbackOM(){
-        if (frameCallbackHeight > 0 && frameCallbackWidth > 0
+        if (mFrameCallbackHeight > 0 && mFrameCallbackWidth > 0
                 && mDataSize.x > 0 && mDataSize.y > 0) {
             // 计算输出的变换矩阵
             GLESUtils.getMatrix(callbackOM, GLESUtils.TYPE_CENTERCROP,
-                    mDataSize.x, mDataSize.y, frameCallbackWidth, frameCallbackHeight);
+                    mDataSize.x, mDataSize.y, mFrameCallbackWidth, mFrameCallbackHeight);
             // 翻转
             GLESUtils.flip(callbackOM, false, true);
         }
@@ -290,10 +294,10 @@ public class TextureController implements GLSurfaceView.Renderer {
         if (mFrameCallback != null && (isRecord || isShoot)) {
             indexOutput = indexOutput++ >= 2 ? 0 : indexOutput;
             if (outPutBuffer[indexOutput] == null) {
-                outPutBuffer[indexOutput] = ByteBuffer.allocate(frameCallbackWidth *
-                    frameCallbackHeight * 4);
+                outPutBuffer[indexOutput] = ByteBuffer.allocate(mFrameCallbackWidth *
+                        mFrameCallbackHeight * 4);
             }
-            GLES20.glViewport(0, 0, frameCallbackWidth, frameCallbackHeight);
+            GLES20.glViewport(0, 0, mFrameCallbackWidth, mFrameCallbackHeight);
             GLESUtils.bindFrameTexture(mExportFrame[0], mExportTexture[0]);
             mShowFilter.setMatrix(callbackOM);
             mShowFilter.draw();
@@ -308,9 +312,9 @@ public class TextureController implements GLSurfaceView.Renderer {
      * 帧画面回调
      */
     private void frameCallback() {
-        GLES20.glReadPixels(0, 0, frameCallbackWidth, frameCallbackHeight,
+        GLES20.glReadPixels(0, 0, mFrameCallbackWidth, mFrameCallbackHeight,
             GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, outPutBuffer[indexOutput]);
-        mFrameCallback.onFrame(outPutBuffer[indexOutput].array(), 0);
+        mFrameCallback.onFrame(outPutBuffer[indexOutput].array(), System.currentTimeMillis());
     }
 
     /**

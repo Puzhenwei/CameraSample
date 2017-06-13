@@ -14,5 +14,9 @@ import android.opengl.GLSurfaceView;
  */
 public interface Renderer extends GLSurfaceView.Renderer {
 
+    void setDefaultPreviewSize(int width, int height);
+    void closeCamera();
+    void openCamera();
+    void switchCamera(int cameraID);
     void onDestroy();
 }

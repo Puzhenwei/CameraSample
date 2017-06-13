@@ -234,9 +234,9 @@ public class FileUtils {
     }
 
     /**
-     *
-     * @param file
-     * @return
+     * 从文件中读取字符串
+     * @param file 文件
+     * @return  字符串
      */
     public static String readTextFromFile(File file) {
         String outStr = "";

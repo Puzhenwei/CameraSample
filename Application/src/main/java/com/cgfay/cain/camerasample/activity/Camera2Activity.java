@@ -4,33 +4,12 @@ package com.cgfay.cain.camerasample.activity;
 import android.Manifest;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.BitmapRegionDecoder;
-import android.graphics.Matrix;
-import android.graphics.Rect;
-import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.CaptureResult;
-import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.StreamConfigurationMap;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.util.Size;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -38,37 +17,19 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.cgfay.cain.camerasample.R;
+import com.cgfay.cain.camerasample.camera.KitkatCameraRenderer;
+import com.cgfay.cain.camerasample.camera2.LollipopCameraRenderer;
 import com.cgfay.cain.camerasample.camera2.FrameCallback;
 import com.cgfay.cain.camerasample.camera2.Renderer;
 import com.cgfay.cain.camerasample.camera2.TextureController;
-import com.cgfay.cain.camerasample.filter.WaterMaskFilter;
-import com.cgfay.cain.camerasample.data.Facer;
-import com.cgfay.cain.camerasample.data.Frame;
-import com.cgfay.cain.camerasample.data.Organ;
-import com.cgfay.cain.camerasample.data.Sticker;
-import com.cgfay.cain.camerasample.task.JsonParser;
 import com.cgfay.cain.camerasample.task.MediaSaver;
 import com.cgfay.cain.camerasample.task.MediaSaverTask;
 import com.cgfay.cain.camerasample.util.DisplayUtils;
-import com.cgfay.cain.camerasample.util.FileUtils;
 import com.cgfay.cain.camerasample.util.GLESUtils;
 import com.cgfay.cain.camerasample.util.PermissionUtils;
-import com.cgfay.cain.camerasample.util.SDCardUtils;
 import com.cgfay.cain.camerasample.util.StickerUtils;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.List;
-
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
-
-
-import static android.hardware.camera2.CameraDevice.TEMPLATE_PREVIEW;
 
 
 public class Camera2Activity extends AppCompatActivity implements FrameCallback {
@@ -104,13 +65,10 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
     private Runnable initViewRunnable = new Runnable() {
         @Override
         public void run() {
+            // 获取屏幕默认分辨率
+            mWidth = DisplayUtils.getScreenWidth(Camera2Activity.this);
+            mHeight = DisplayUtils.getScreenHeight(Camera2Activity.this);
 
-            // 根据SDK版本判断使用哪一版的渲染器
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                mRenderer = new Camera2Renderer();
-            }else{
-                mRenderer = new Camera1Renderer();
-            }
             // 获取解压后的路径列表
             folderPath = getIntent().getStringArrayExtra("folderPath");
 
@@ -151,7 +109,18 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
             mController.setShowType(GLESUtils.TYPE_CENTERCROP);
 
             // 控制帧回调
-            mController.setFrameCallback(720, 1280, Camera2Activity.this);
+            mController.setFrameCallback(mWidth, mHeight, Camera2Activity.this);
+
+            // 根据SDK版本判断使用哪一版的渲染器
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                mRenderer = new LollipopCameraRenderer(Camera2Activity.this, cameraId, mController);
+            }else{
+                mRenderer = new KitkatCameraRenderer(Camera2Activity.this, cameraId, mController);
+            }
+
+            // 设置默认的分辨率
+            mRenderer.setDefaultPreviewSize(mWidth, mHeight);
+
             // 根据路径列表获取文件列表
             StickerUtils.scanPackages(Camera2Activity.this, mController, folderPath);
 
@@ -193,7 +162,6 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
                     }
                 }
             });
-            Log.d(TAG, "path : " + (Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString()+ File.separator + "Camera"));
         }
     };
 
@@ -238,16 +206,11 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
     }
 
     @Override
-    public void onFrame(final byte[] bytes, long time) {
+    public void onFrame(final byte[] bytes, final long time) {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                // TODO 这里的bytes数据可以直接存放而不用转成Bitmap再做，迟点修改
-                Bitmap bitmap = Bitmap.createBitmap(720,1280, Bitmap.Config.ARGB_8888);
-                ByteBuffer b = ByteBuffer.wrap(bytes);
-                bitmap.copyPixelsFromBuffer(b);
-                saveBitmap(bitmap);
-                bitmap.recycle();
+                saveImage(bytes, time);
             }
         }).start();
     }
@@ -261,214 +224,37 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
 
     /**
      * 保存图片
-     * @param b bitmap数据
+     * @param bytes
+     * @param time
      */
-    private void saveBitmap(Bitmap b) {
-        // TODO 改写保存照片的代码，使用lruCache和队列防止OOM
+    private void saveImage(byte[]bytes, long time) {
+        final Bitmap bitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+        ByteBuffer b = ByteBuffer.wrap(bytes);
+        bitmap.copyPixelsFromBuffer(b);
 
-        String path =  SDCardUtils.getInnerSDCardPath()+ CAMERA_PATH;
-        File folder = new File(path);
-        if (!folder.exists() && !folder.mkdirs()){
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(Camera2Activity.this, "无法保存照片", Toast.LENGTH_SHORT).show();
-                }
-            });
-            return;
-        }
-        long dataTake = System.currentTimeMillis();
-        final String jpegName = path + dataTake + ".jpg";
-        try {
-            FileOutputStream fout = new FileOutputStream(jpegName);
-            BufferedOutputStream bos = new BufferedOutputStream(fout);
-            b.compress(Bitmap.CompressFormat.JPEG, 100, bos);
-            bos.flush();
-            bos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Intent intent = new Intent(Camera2Activity.this, PhotoViewActivity.class);
-                intent.putExtra(PhotoViewActivity.FILE_NAME, jpegName);
-                startActivity(intent);
-            }
-        });
+        mMediaSaver.saveImage(bitmap, time + "", null,
+                mWidth, mHeight, 1, null, new MediaSaver.OnMediaSavedListener() {
+                    @Override
+                    public void onMediaSaved(Uri uri) {
+                        if (uri != null) {
+                            Intent intent = new Intent(Camera2Activity.this, PhotoViewActivity.class);
+                            intent.putExtra(PhotoViewActivity.URI_NAME, uri.toString());
+                            startActivity(intent);
+                        }
+                    }
+                });
     }
 
     /**
      * 切换摄像头
      */
     private void switchCamera() {
-
+        if (cameraId == 1) {
+            cameraId = 0;
+        } else if (cameraId == 0) {
+            cameraId = 1;
+        }
+        mRenderer.switchCamera(cameraId);
     }
 
-    /**
-     * 旧版camera 渲染器
-     */
-    private class Camera1Renderer implements Renderer {
-
-        private Camera mCamera;
-
-        @Override
-        public void onDestroy() {
-            if (mCamera != null) {
-                mCamera.stopPreview();
-                mCamera.release();
-                mCamera = null;
-            }
-        }
-
-        @Override
-        public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            if (mCamera != null) {
-                mCamera.stopPreview();
-                mCamera.release();
-                mCamera = null;
-            }
-            mCamera = Camera.open(cameraId);
-            mController.setImageDirection(cameraId);
-            Camera.Size size = mCamera.getParameters().getPreviewSize();
-            mController.setDataSize(size.height, size.width);
-            try {
-                mCamera.setPreviewTexture(mController.getTexture());
-                mController.getTexture().setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
-                    @Override
-                    public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-                        mController.requestRender();
-                    }
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            mCamera.startPreview();
-        }
-
-        @Override
-        public void onSurfaceChanged(GL10 gl, int width, int height) {
-
-        }
-
-        @Override
-        public void onDrawFrame(GL10 gl) {
-
-        }
-
-    }
-
-
-    /**
-     * Android 5.0 以后的渲染器
-     */
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    private class Camera2Renderer implements Renderer {
-
-        CameraDevice mDevice;
-        CameraManager mCameraManager;
-        private HandlerThread mThread;
-        private Handler mHandler;
-        private Size mPreviewSize;
-
-        Camera2Renderer() {
-            mCameraManager = (CameraManager)getSystemService(CAMERA_SERVICE);
-            mThread = new HandlerThread("camera2 ");
-            mThread.start();
-            mHandler = new Handler(mThread.getLooper());
-        }
-
-        @Override
-        public void onDestroy() {
-            if(mDevice!=null){
-                mDevice.close();
-                mDevice=null;
-            }
-        }
-
-        @Override
-        public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            try {
-                if(mDevice!=null){
-                    mDevice.close();
-                    mDevice=null;
-                }
-                CameraCharacteristics c=mCameraManager.getCameraCharacteristics(cameraId+"");
-                StreamConfigurationMap map=c.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                Size[] sizes=map.getOutputSizes(SurfaceHolder.class);
-                //自定义规则，选个大小
-                mPreviewSize=sizes[0];
-                mController.setDataSize(mPreviewSize.getHeight(),mPreviewSize.getWidth());
-                mCameraManager.openCamera(cameraId + "", new CameraDevice.StateCallback() {
-                    @Override
-                    public void onOpened(CameraDevice camera) {
-                        mDevice = camera;
-                        try {
-                            Surface surface = new Surface(mController.getTexture());
-                            final CaptureRequest.Builder builder = mDevice.createCaptureRequest(TEMPLATE_PREVIEW);
-                            builder.addTarget(surface);
-                            mController.getTexture().setDefaultBufferSize(mPreviewSize.getWidth(),
-                                    mPreviewSize.getHeight());
-                            mDevice.createCaptureSession(Arrays.asList(surface),
-                                    new CameraCaptureSession.StateCallback() {
-                                @Override
-                                public void onConfigured(CameraCaptureSession session) {
-                                    try {
-                                        session.setRepeatingRequest(builder.build(),
-                                                new CameraCaptureSession.CaptureCallback() {
-                                            @Override
-                                            public void onCaptureProgressed(CameraCaptureSession session,
-                                                                            CaptureRequest request,
-                                                                            CaptureResult partialResult) {
-                                                super.onCaptureProgressed(session, request, partialResult);
-                                            }
-
-                                            @Override
-                                            public void onCaptureCompleted(CameraCaptureSession session,
-                                                                           CaptureRequest request,
-                                                                           TotalCaptureResult result) {
-                                                super.onCaptureCompleted(session, request, result);
-                                                mController.requestRender();
-                                            }
-                                        }, mHandler);
-                                    } catch (CameraAccessException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-
-                                @Override
-                                public void onConfigureFailed(CameraCaptureSession session) {
-
-                                }
-                            },mHandler);
-                        } catch (CameraAccessException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onDisconnected(CameraDevice camera) {
-                        mDevice=null;
-                    }
-
-                    @Override
-                    public void onError(CameraDevice camera, int error) {
-
-                    }
-                }, mHandler);
-            } catch (SecurityException | CameraAccessException e) {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public void onSurfaceChanged(GL10 gl, int width, int height) {
-
-        }
-
-        @Override
-        public void onDrawFrame(GL10 gl) {
-
-        }
-    }
 }

@@ -3,8 +3,9 @@ package com.cgfay.cain.camerasample.task;
 import android.content.ContentValues;
 import android.graphics.Bitmap;
 import android.location.Location;
-import android.media.ExifInterface;
 import android.net.Uri;
+
+import com.cgfay.cain.camerasample.exif.ExifInterface;
 
 
 public interface MediaSaver {
@@ -73,22 +74,38 @@ public interface MediaSaver {
 
     /**
      * 保存图片
-     * @param bitmap
-     * @param title
-     * @param date
-     * @param location
-     * @param width
-     * @param height
-     * @param orientation
-     * @param exif
-     * @param listener
-     * @param mimeType
+     * @param bitmap 图片数据
+     * @param title 标题
+     * @param date  时间
+     * @param location  位置
+     * @param width 宽度
+     * @param height    高度
+     * @param orientation   旋转方向
+     * @param exif  Exif信息
+     * @param listener  监听器
+     * @param mimeType  mimeType
      */
     public void saveImage(Bitmap bitmap, String title, long date,
                           Location location, int width, int height,
                           int orientation, ExifInterface exif,
                           OnMediaSavedListener listener, String mimeType);
 
+
+    public void saveImage(byte[] data, String title,
+                          Location location, int width, int height,
+                          int orientation, ExifInterface exif,
+                          OnMediaSavedListener listener);
+
+
+    public void saveImage(byte[] data, String title, long date,
+                          Location location, int width, int height,
+                          int orientation, ExifInterface exif,
+                          OnMediaSavedListener listener);
+
+    public void saveImage(byte[] data, String title, long date,
+                          Location location, int width, int height,
+                          int orientation, ExifInterface exif,
+                          OnMediaSavedListener listener, String mimeType);
 
     /**
      * 保存视频

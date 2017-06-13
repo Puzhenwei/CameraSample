@@ -5,7 +5,6 @@ import android.content.ContentValues;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.location.Location;
-import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -16,9 +15,12 @@ import android.util.LruCache;
 
 import com.cgfay.cain.camerasample.data.MediaItemData;
 import com.cgfay.cain.camerasample.data.Size;
+import com.cgfay.cain.camerasample.exif.ExifInterface;
 import com.google.common.base.Optional;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.UUID;
@@ -36,12 +38,12 @@ public class Storage {
     public static final long PREPARING = -2L;
     public static final long UNKNOWN_SIZE = -3L;
     public static final long ACCESS_FAILURE = -4L;
-    public static final long LOW_STORAGE_THRESHOLOD_BYTES = 50000000;
+    public static final long LOW_STORAGE_THRESHOLOD_BYTES = 50000000; // 50MB
     public static final String CAMERA_SESSION_SCHEME = "camera_session";
 
     private static final String TAG = "Storage";
     private static final String GOOGLE_COM = "google.com";
-    private static final int LRUCACHE_MAX_MEMORY_SIZE = 20 * 1024 * 1024;
+    private static final int LRUCACHE_MAX_MEMORY_SIZE = 20 * 1024 * 1024; // 20MB
 
     private static final HashMap<Uri, Uri> sSessionsToContentUris = new HashMap<>();
     private static final HashMap<Uri, Uri> sContentUrisToSessions = new HashMap<>();
@@ -61,24 +63,35 @@ public class Storage {
 
 
     public static Uri saveImage(ContentResolver resolver, String title, long date,
-                                Location location, int orientation, ExifInterface exif,
-                                Bitmap bitmap, int width, int height) throws IOException {
-        return saveImage(resolver, title, date, location, orientation,
-                exif, bitmap, width, height, MediaItemData.MIME_TYPE_JPEG);
+                                Location location, int orientation, ExifInterface exif, byte[] jpeg,
+                                int width, int height) throws IOException {
+        return saveImage(resolver, title, date, location, orientation, exif, jpeg,
+                width, height, MediaItemData.MIME_TYPE_JPEG);
     }
 
-    public static Uri saveImage(ContentResolver resolver, String title, long date, Location location,
-                                int orientation, ExifInterface exif, Bitmap bitmap,
+    public static Uri saveImage(ContentResolver resolver, String title, long date,
+                                Location location, int orientation, ExifInterface exif, byte[] jpeg,
                                 int width, int height, String mimeType) throws IOException {
         String path = generateFilePath(title, mimeType);
-        long fileLength = writeFile(path, bitmap, exif);
-        if (fileLength >= 0) {
+        long fileLength = writeFile(path, jpeg, exif);
+        if (fileLength > 0) {
             return saveimageToMediaStore(resolver, title, date, location, orientation, fileLength,
                     path, width, height, mimeType);
         }
         return null;
     }
 
+    public static Uri saveImage(ContentResolver resolver, String title, long date,
+                                Location location, int orientation, ExifInterface exif, Bitmap bitmap,
+                                int width, int height, String mimeType) throws IOException {
+        String path = generateFilePath(title, mimeType);
+        long fileLength = writeFile(path, bitmap, exif);
+        if (fileLength > 0) {
+            return saveimageToMediaStore(resolver, title, date, location, orientation, fileLength,
+                    path, width, height, mimeType);
+        }
+        return null;
+    }
     /**
      * 将图片信息保存到MediaStore中
      * @param resolver
@@ -196,12 +209,12 @@ public class Storage {
 
     public static Uri updateImage(Uri imageUri, ContentResolver resolver, String title,
                                   long date, Location location, int orientation,
-                                  ExifInterface exif, Bitmap bitmap, int width,
+                                  ExifInterface exif, byte[] data, int width,
                                   int height, String mimeType) throws IOException {
         String path = generateFilePath(title, mimeType);
-        writeFile(path, bitmap, exif);
+        writeFile(path, data, exif);
         return updateImage(imageUri, resolver, title, date, location,
-                orientation, bitmap.getByteCount(), path, width, height, mimeType);
+                orientation, data.length, path, width, height, mimeType);
     }
 
     private static Uri generateUniquePlaceholderUri() {
@@ -218,28 +231,84 @@ public class Storage {
         }
     }
 
-    /**
-     * 将exif信息和jpeg图片数据写入文件
-     * @param path
-     * @param bitmap
-     * @param exif
-     * @return
-     * @throws IOException
-     */
-    public static long writeFile(String path, Bitmap bitmap, ExifInterface exif) throws IOException {
+    public static long writeFile(String path, byte[] jpeg, ExifInterface exif)
+            throws IOException {
         if (!createDirectoryIfNeeded(path)) {
-            Log.e(TAG, "Failed to create parent directory for file: " + path);
+            Log.e(TAG, "Failed to create parent directory for title: " + path);
             return -1;
         }
-
         if (exif != null) {
-            // 将图片数据和exif信息写如path路径，并返回文件名称长度
-            return MediaUtils.writeExifAndBitmapData(path, bitmap, exif);
-        } else  {
-            return MediaUtils.writeBitmapWithoutExif(path, bitmap);
+            exif.writeExif(jpeg, path);
+            File file = new File(path);
+            return file.length();
+        } else {
+            return writeFile(path, jpeg);
         }
     }
 
+    public static long writeFile(String path, Bitmap bitmap, ExifInterface exif)
+            throws IOException {
+        if (!createDirectoryIfNeeded(path)) {
+            Log.e(TAG, "Failed to create parent directory for title: " + path);
+            return -1;
+        }
+        if (exif != null) {
+            exif.writeExif(bitmap, path);
+            File file = new File(path);
+            return file.length();
+        } else {
+            return writeFile(path, bitmap);
+        }
+    }
+
+    private static long writeFile(String path, byte[] jpeg) {
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(path);
+            out.write(jpeg);
+            return jpeg.length;
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to write data", e);
+        } finally {
+            try {
+                out.close();
+            } catch (IOException e) {
+                Log.e(TAG, "Failed to close file after write", e);
+            }
+        }
+        return -1;
+    }
+
+    private static long writeFile(String path, Bitmap bitmap) {
+        int length = bitmap.getByteCount();
+        File file = new File(path);
+        if (!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
+        FileOutputStream fout = null;
+        BufferedOutputStream bos = null;
+        try {
+            fout = new FileOutputStream(path);
+            bos = new BufferedOutputStream(fout);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, bos);
+            bos.flush();
+        } catch (IOException e) {
+            Log.e(TAG, "fail to write bitmap to path: " + path, e);
+            return -1;
+        } finally {
+            try {
+                fout.close();
+            } catch (IOException e) {
+                Log.e(TAG, "fail to close FileOutputStream: ", e);
+            }
+            try {
+                bos.close();
+            } catch (IOException e) {
+                Log.e(TAG, "fail to close BufferedOutputStream: ", e);
+            }
+        }
+        return length;
+    }
     /**
      * 重命名文件
      * @param inputPath

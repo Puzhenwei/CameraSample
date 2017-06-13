@@ -4,17 +4,18 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.graphics.Bitmap;
 import android.location.Location;
-import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.util.Log;
 
 import com.cgfay.cain.camerasample.data.MediaItemData;
+import com.cgfay.cain.camerasample.exif.ExifInterface;
 import com.cgfay.cain.camerasample.util.Storage;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 
 public class MediaSaverTask implements MediaSaver {
@@ -79,6 +80,42 @@ public class MediaSaverTask implements MediaSaver {
         task.execute();
     }
 
+
+    @Override
+    public void saveImage(byte[] data, String title, Location location,
+                          int width, int height, int orientation,
+                          ExifInterface exif, OnMediaSavedListener listener) {
+        saveImage(data, title, System.currentTimeMillis(), location, width, height,
+                orientation, exif, listener, MediaItemData.MIME_TYPE_JPEG);
+    }
+
+    @Override
+    public void saveImage(byte[] data, String title, long date, Location location,
+                          int width, int height, int orientation, ExifInterface exif,
+                          OnMediaSavedListener listener) {
+        saveImage(data, title, date, location, width, height, orientation,
+                exif, listener, MediaItemData.MIME_TYPE_JPEG);
+    }
+
+    @Override
+    public void saveImage(byte[] data, String title, long date, Location location,
+                          int width, int height, int orientation, ExifInterface exif,
+                          OnMediaSavedListener listener, String mimeType) {
+        if (isQueueFull()) {
+            Log.e(TAG, "Cannot add image when the queue is full");
+            return;
+        }
+        ImageSaveTask task = new ImageSaveTask(data, title, date,
+                (location == null) ? null : new Location(location),
+                width, height, orientation, mimeType, exif, mContentResolver, listener);
+        // 计算内存使用
+        mMemoryUse += data.length;
+        if (isQueueFull()) {
+            onQuqueFull();
+        }
+        task.execute();
+    }
+
     @Override
     public void addVideo(String path, ContentValues values, OnMediaSavedListener listener) {
         new VideoSaveTask(path, values, listener, mContentResolver).execute();
@@ -137,6 +174,28 @@ public class MediaSaverTask implements MediaSaver {
             this.date = date;
             this.location = location;
         }
+
+        public ImageSaveTask(byte[] data, String title, long date, Location location,
+                             int width, int height, int orientation, String mimeType,
+                             ExifInterface exif, ContentResolver resolver,
+                             OnMediaSavedListener listener) {
+            this.orientation = orientation;
+            this.exif = exif;
+            this.resolver = resolver;
+            this.listener = listener;
+            this.width = width;
+            this.height = height;
+            this.mimeType = mimeType;
+            this.title = title;
+            this.date = date;
+            this.location = location;
+            // 创建Bitmap
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            ByteBuffer b = ByteBuffer.wrap(data);
+            bitmap.copyPixelsFromBuffer(b);
+            this.bitmap = bitmap;
+        }
+
 
         @Override
         protected void onPreExecute() {
