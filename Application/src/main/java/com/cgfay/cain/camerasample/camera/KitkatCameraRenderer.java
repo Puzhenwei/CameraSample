@@ -9,6 +9,7 @@ import android.view.Surface;
 
 import com.cgfay.cain.camerasample.camera2.Renderer;
 import com.cgfay.cain.camerasample.camera2.TextureController;
+import com.cgfay.cain.camerasample.util.DisplayUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -81,11 +82,16 @@ public class KitkatCameraRenderer implements Renderer {
         mCamera = Camera.open(mCameraID);
         mController.setImageDirection(mCameraID);
 
-        setCameraDisplayOrientation((Activity) mContext, mCameraID, mCamera);
         Camera.Size size = getPerfectSize();
-        Log.d(TAG, "width: " + size.width + ", height: " + size.height);
         setPictureSize(size.width, size.height);
-        mController.setDataSize(size.height, size.width);
+        // 处理摄像头倒置的问题
+        if (camerReverseIfNeeded(size)) {
+            mController.setCameraReverse(true);
+            mController.setDataSize(size.height, size.width);
+        } else {
+            mController.setCameraReverse(false);
+            mController.setDataSize(size.width, size.height);
+        }
         try {
             mCamera.setPreviewTexture(mController.getTexture());
             mController.getTexture().setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
@@ -136,7 +142,11 @@ public class KitkatCameraRenderer implements Renderer {
         return result;
     }
 
-    // 设置相机的分辨率(仅相机支持的分辨率)
+    /**
+     * 设置相机的分辨率(仅相机支持的分辨率)
+     * @param width
+     * @param height
+     */
     private void setPictureSize(int width, int height) {
         if (mCamera != null) {
             Camera.Parameters param = mCamera.getParameters();
@@ -146,31 +156,19 @@ public class KitkatCameraRenderer implements Renderer {
     }
 
     /**
-     * 这里主要是解决摄像头倒置的情况
-     * @param activity
-     * @param cameraId
-     * @param camera
+     * 判断摄像头是否倒置
+     * @param size
+     * @return
      */
-    public void setCameraDisplayOrientation(Activity activity,
-                                                   int cameraId, android.hardware.Camera camera) {
-        android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
-        android.hardware.Camera.getCameraInfo(cameraId, info);
-        int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-        int degrees = 0;
-        switch (rotation) {
-            case Surface.ROTATION_0: degrees = 0; break;
-            case Surface.ROTATION_90: degrees = 90; break;
-            case Surface.ROTATION_180: degrees = 180; break;
-            case Surface.ROTATION_270: degrees = 270; break;
+    private boolean camerReverseIfNeeded(Camera.Size size) {
+        boolean reverse = false;
+        int width = DisplayUtils.getScreenWidth(mContext);
+        int height = DisplayUtils.getScreenHeight(mContext);
+        // 判断当前的相机支持的分辨率宽高大小与屏幕宽高相反(宽比高大)，则表示相机倒置了
+        if ((size.width > size.height && width < height)
+                || (size.width < size.height && width > height)) {
+            reverse = true;
         }
-
-        int result;
-        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            result = (info.orientation + degrees) % 360;
-            result = (360 - result) % 360;
-        } else {
-            result = (info.orientation - degrees + 360) % 360;
-        }
-        camera.setDisplayOrientation(result);
+        return reverse;
     }
 }

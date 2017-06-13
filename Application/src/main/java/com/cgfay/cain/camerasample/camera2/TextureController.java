@@ -33,6 +33,8 @@ public class TextureController implements GLSurfaceView.Renderer {
     private static final int DEFAULT_WIDTH = 720;
     private static final int DEFAULT_HEIGHT = 1280;
 
+    // 摄像头是否倒置，默认情况下是不倒置的
+    private boolean mReverse = false;
     private Object surface;
 
     private GLView mGLView;
@@ -76,7 +78,6 @@ public class TextureController implements GLSurfaceView.Renderer {
         this.mWindowSize.x = width;
         this.mWindowSize.y = height;
 
-        // TODO 这里需要处理相机的排布问题
         mFrameCallbackWidth = width;
         mFrameCallbackHeight = height;
         mGLView.surfaceChanged(null, 0, width, height);
@@ -139,7 +140,7 @@ public class TextureController implements GLSurfaceView.Renderer {
         mEffectFilter.setFlag(mDirectionFlag);
 
         deleteFrameBuffer();
-        GLES20.glGenFramebuffers(1,mExportFrame,0);
+        GLES20.glGenFramebuffers(1, mExportFrame, 0);
         GLESUtils.genTexturesWithParameter(1, mExportTexture, 0, GLES20.GL_RGBA, mDataSize.x,
             mDataSize.y);
     }
@@ -452,4 +453,7 @@ public class TextureController implements GLSurfaceView.Renderer {
         return mWindowSize;
     }
 
+    public void setCameraReverse(boolean reverse) {
+        mReverse = reverse;
+    }
 }

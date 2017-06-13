@@ -1,6 +1,7 @@
 package com.cgfay.cain.camerasample.camera2;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -18,6 +19,8 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.SurfaceHolder;
+
+import com.cgfay.cain.camerasample.util.DisplayUtils;
 
 import java.util.Arrays;
 
@@ -112,7 +115,15 @@ public class LollipopCameraRenderer implements Renderer {
                     = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             mPreviewSize = getPerfectSize(map.getOutputSizes(SurfaceHolder.class));
 
-            mController.setDataSize(mPreviewSize.getHeight(), mPreviewSize.getWidth());
+            if (camerReverseIfNeeded(mPreviewSize)) {
+                Log.d(TAG, "reverse = true");
+                mController.setCameraReverse(true);
+                mController.setDataSize(mPreviewSize.getHeight(), mPreviewSize.getWidth());
+            } else {
+                Log.d(TAG, "reverse = false");
+                mController.setCameraReverse(false);
+                mController.setDataSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            }
             mCameraManager.openCamera(mCameraID + "", mDeviceStateCallback, mHandler);
         } catch (SecurityException | CameraAccessException e) {
             e.printStackTrace();
@@ -146,6 +157,23 @@ public class LollipopCameraRenderer implements Renderer {
         }
 
         return size;
+    }
+
+    /**
+     * 处理摄像头倒置
+     * @param size
+     * @return
+     */
+    private boolean camerReverseIfNeeded(Size size) {
+        boolean reverse = false;
+        int width = DisplayUtils.getScreenWidth(mContext);
+        int height = DisplayUtils.getScreenHeight(mContext);
+        // 判断当前的相机支持的分辨率宽高大小与屏幕宽高相反(宽比高大)，则表示相机倒置了
+        if ((size.getWidth() > size.getHeight() && width < height)
+                || (size.getWidth() < size.getHeight() && width > height)) {
+            reverse = true;
+        }
+        return reverse;
     }
 
     /// ------------------ 相机回调 ------------------///
