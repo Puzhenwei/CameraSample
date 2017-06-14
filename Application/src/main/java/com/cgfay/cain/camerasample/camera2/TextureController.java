@@ -5,6 +5,7 @@ import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
@@ -29,6 +30,8 @@ import javax.microedition.khronos.opengles.GL10;
  * 而是将内容绘制到外部提供的Surface、SurfaceHolder或者SurfaceTexture上。
  */
 public class TextureController implements GLSurfaceView.Renderer {
+
+    private static final String TAG = "TextureController";
 
     private static final int DEFAULT_WIDTH = 720;
     private static final int DEFAULT_HEIGHT = 1280;
@@ -70,7 +73,7 @@ public class TextureController implements GLSurfaceView.Renderer {
     }
 
     public void surfaceCreated(Object nativeWindow){
-        this.surface=nativeWindow;
+        this.surface = nativeWindow;
         mGLView.surfaceCreated(null);
     }
 
@@ -366,7 +369,7 @@ public class TextureController implements GLSurfaceView.Renderer {
      * 方法及onDetachedFromWindow方法，取消holder的默认监听
      * onAttachedToWindow及onDetachedFromWindow必须保证view
      * 存在Parent */
-    private class GLView extends GLSurfaceView{
+    private class GLView extends GLSurfaceView {
 
         public GLView(Context context) {
             super(context);

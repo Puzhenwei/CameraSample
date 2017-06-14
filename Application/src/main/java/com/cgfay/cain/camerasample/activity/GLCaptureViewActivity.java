@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
-import android.os.Environment;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -15,21 +15,22 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.cgfay.cain.camerasample.R;
+import com.cgfay.cain.camerasample.task.MediaSaver;
+import com.cgfay.cain.camerasample.task.MediaSaverTask;
 import com.cgfay.cain.camerasample.util.PermissionUtils;
 import com.cgfay.cain.camerasample.camera.CameraView;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 
 public class GLCaptureViewActivity extends AppCompatActivity {
+
+    private static final String TAG = "GLCaptureViewActivity";
 
     private CameraView mCameraView;
     private Button mBtnViewPhoto;
     private Button mBtnTake;
     private Button mBtnSwitchCamera;
+
+    private MediaSaver mMediaSaver;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -50,6 +51,9 @@ public class GLCaptureViewActivity extends AppCompatActivity {
             mBtnViewPhoto = (Button) findViewById(R.id.btn_view_photo);
             mBtnTake = (Button) findViewById(R.id.btn_take);
             mBtnSwitchCamera = (Button) findViewById(R.id.btn_switch);
+
+            // 用于保存照片
+            mMediaSaver = new MediaSaverTask(getContentResolver());
 
             mBtnViewPhoto.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -112,28 +116,19 @@ public class GLCaptureViewActivity extends AppCompatActivity {
             if (bitmap == null) {
                 Toast.makeText(GLCaptureViewActivity.this, "拍照失败",Toast.LENGTH_SHORT).show();
             } else {
-                // 将图片保存本地
-                String fileName = Environment.getExternalStorageDirectory().toString() +
-                        File.separator + "DCIM" + File.separator + "Camera" + File.separator
-                        + "PicTest_" + System.currentTimeMillis() + ".jpg";
-                File file = new File(fileName);
-                if (!file.getParentFile().exists()) {
-                    file.getParentFile().mkdir();
-                }
-                try {
-                    // 向缓冲区压缩图片
-                    BufferedOutputStream bufferedOutputStream =
-                            new BufferedOutputStream(new FileOutputStream(file));
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, bufferedOutputStream);
-                    bufferedOutputStream.flush();
-                    bufferedOutputStream.close();
-                    // 跳转至预览页面
-                    Intent intent = new Intent(GLCaptureViewActivity.this, PhotoViewActivity.class);
-                    intent.putExtra(PhotoViewActivity.FILE_NAME, fileName);
-                    startActivity(intent);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                mMediaSaver.saveImage(bitmap, System.currentTimeMillis() + "", null,
+                        bitmap.getWidth(), bitmap.getHeight(), 90, null,
+                        new MediaSaver.OnMediaSavedListener() {
+                            @Override
+                            public void onMediaSaved(Uri uri) {
+                                if (uri != null) {
+                                    Intent intent = new Intent(GLCaptureViewActivity.this,
+                                            PhotoViewActivity.class);
+                                    intent.putExtra(PhotoViewActivity.URI_NAME, uri.toString());
+                                    startActivity(intent);
+                                }
+                            }
+                        });
             }
         }
     };

@@ -1,11 +1,8 @@
 package com.cgfay.cain.camerasample.camera;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.util.Log;
-import android.view.Surface;
 
 import com.cgfay.cain.camerasample.camera2.Renderer;
 import com.cgfay.cain.camerasample.camera2.TextureController;

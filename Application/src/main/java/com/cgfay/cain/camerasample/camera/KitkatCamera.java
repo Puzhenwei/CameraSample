@@ -1,10 +1,13 @@
 
 package com.cgfay.cain.camerasample.camera;
 
+import android.content.Context;
 import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.util.Log;
+
+import com.cgfay.cain.camerasample.util.DisplayUtils;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -25,10 +28,11 @@ public class KitkatCamera implements ICamera {
     private Point mPicSize;
     private Point mPreSize;
 
-    public KitkatCamera() {
+    public KitkatCamera(Context context) {
         this.mConfig = new Config();
-        mConfig.minPreviewWidth = 720;
-        mConfig.minPictureWidth = 720;
+        int width = DisplayUtils.getScreenWidth(context);
+        mConfig.minPreviewWidth = width;
+        mConfig.minPictureWidth = width;
         mConfig.rate = 1.778f;
         sizeComparator = new CameraSizeComparator();
     }
@@ -51,7 +55,6 @@ public class KitkatCamera implements ICamera {
             Camera.Size pic = param.getPictureSize();
             mPicSize = new Point(pic.height, pic.width);
             mPreSize = new Point(pre.height, pre.width);
-            Log.d(TAG, "camera previewSize: " + mPreSize.x + "/" + mPreSize.y);
             return true;
         }
         return false;

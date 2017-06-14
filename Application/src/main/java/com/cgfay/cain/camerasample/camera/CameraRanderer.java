@@ -15,7 +15,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 
-public class CameraDrawer implements GLSurfaceView.Renderer {
+public class CameraRanderer implements GLSurfaceView.Renderer {
 
     private float[] matrix = new float[16];
     private SurfaceTexture surfaceTexture;
@@ -24,7 +24,7 @@ public class CameraDrawer implements GLSurfaceView.Renderer {
     private Filter mBaseFilter;
     private int cameraId = 1;
 
-    public CameraDrawer(Resources res){
+    public CameraRanderer(Resources res){
         mBaseFilter = new CameraFilter(res);
     }
 
@@ -55,7 +55,7 @@ public class CameraDrawer implements GLSurfaceView.Renderer {
         return surfaceTexture;
     }
 
-    public void setCameraId(int id){
+    public void setCameraId(int id) {
         this.cameraId = id;
         calculateMatrix();
     }

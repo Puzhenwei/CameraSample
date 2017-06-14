@@ -7,7 +7,6 @@ import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.util.AttributeSet;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -17,7 +16,7 @@ import javax.microedition.khronos.opengles.GL10;
 public class CameraView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
     private ICamera mCamera;
-    private CameraDrawer mCameraDrawer;
+    private CameraRanderer mCameraRanderer;
     private int cameraId = 1;
 
     private Runnable mRunnable;
@@ -35,28 +34,23 @@ public class CameraView extends GLSurfaceView implements GLSurfaceView.Renderer 
         setEGLContextClientVersion(2);
         setRenderer(this);
         setRenderMode(RENDERMODE_WHEN_DIRTY);
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//            mCamera = new LollipopCamera(context);
-//        } else {
-//            mCamera = new KitkatCamera();
-//        }
-        mCamera = new KitkatCamera();
-        mCameraDrawer = new CameraDrawer(getResources());
+        mCamera = new KitkatCamera(context);
+        mCameraRanderer = new CameraRanderer(getResources());
     }
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        mCameraDrawer.onSurfaceCreated(gl,config);
+        mCameraRanderer.onSurfaceCreated(gl,config);
         if (mRunnable != null) {
             mRunnable.run();
             mRunnable = null;
         }
         mCamera.open(cameraId);
-        mCameraDrawer.setCameraId(cameraId);
+        mCameraRanderer.setCameraId(cameraId);
         Point point = mCamera.getPreviewSize();
-        mCameraDrawer.setDataSize(point.x, point.y);
-        mCamera.setPreviewTexture(mCameraDrawer.getSurfaceTexture());
-        mCameraDrawer.getSurfaceTexture()
+        mCameraRanderer.setDataSize(point.x, point.y);
+        mCamera.setPreviewTexture(mCameraRanderer.getSurfaceTexture());
+        mCameraRanderer.getSurfaceTexture()
                 .setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
             @Override
             public void onFrameAvailable(SurfaceTexture surfaceTexture) {
@@ -80,13 +74,13 @@ public class CameraView extends GLSurfaceView implements GLSurfaceView.Renderer 
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        mCameraDrawer.setViewSize(width, height);
+        mCameraRanderer.setViewSize(width, height);
         GLES20.glViewport(0, 0, width, height);
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
-        mCameraDrawer.onDrawFrame(gl);
+        mCameraRanderer.onDrawFrame(gl);
     }
 
     @Override

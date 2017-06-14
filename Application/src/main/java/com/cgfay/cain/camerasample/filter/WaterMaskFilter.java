@@ -69,6 +69,7 @@ public class WaterMaskFilter extends ClearFilter {
         super.onSizeChanged(width, height);
         mWidth = width;
         mHeight = height;
+        Log.d(TAG, "width = " + width + ", height = " + height);
         mFilter.setSize(width, height);
     }
 

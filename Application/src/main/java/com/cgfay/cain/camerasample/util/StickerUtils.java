@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Matrix;
 import android.graphics.Rect;
+import android.util.Log;
 
 import com.cgfay.cain.camerasample.camera2.TextureController;
 import com.cgfay.cain.camerasample.data.Facer;
@@ -103,15 +104,28 @@ public class StickerUtils {
                         frame.getY() + frame.getH());
                 Bitmap temp = decoder.decodeRegion(rect, options);
                 Matrix matrix = new Matrix();
-                if (scale == 0) {
-                    float scaleW = temp.getWidth() / DisplayUtils.getScreenWidth(context);
-                    float scaleH = temp.getHeight() / DisplayUtils.getScreenHeight(context);
-                    scale = scaleW > scaleH ? scaleW : scaleH;
+
+//                if (scale == 0 || (facer.getType().equals("foreground") && scale == 1)
+//                        || (facer.getType().equals("frame") && scale == 1)) {
+//                    float scaleW = DisplayUtils.getScreenWidth(context) / temp.getWidth();
+//                    float scaleH = DisplayUtils.getScreenHeight(context) / temp.getHeight();
+//                    if (temp.getWidth() > temp.getHeight()) {
+//                        scale = scaleW > scaleH ? scaleW : scaleH;
+//                    } else {
+//                        scale = scaleW < scaleH ? scaleW : scaleH;
+//                    }
+//                }
+                if (facer.getType().equals("foreground") && scale == 1) {
+                    scale = (float) DisplayUtils.getScreenWidth(context) / (float) temp.getWidth();
+                    Log.d(TAG, "scale = " + scale + "screen width = " + DisplayUtils.getScreenWidth(context) + ", bitmap with = " + temp.getWidth());
+                } else if (facer.getType().equals("frame") && scale == 1) {
+                    scale = 1374 / temp.getHeight();
                 }
                 matrix.postScale(scale, scale);
                 // 根据返回的数据进行缩放
                 Bitmap bitmap = Bitmap.createBitmap(temp, 0, 0,
                         temp.getWidth(), temp.getHeight(), matrix, true);
+                Log.d(TAG, "type = " + facer.getType() + ", width = " + bitmap.getWidth() + ", height = " + bitmap.getHeight());
 
                 // 添加贴图
                 WaterMaskFilter filter = new WaterMaskFilter(context.getResources());
