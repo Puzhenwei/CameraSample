@@ -112,11 +112,12 @@ public class Camera2Activity extends AppCompatActivity implements FrameCallback 
             mController.setFrameCallback(mWidth, mHeight, Camera2Activity.this);
 
             // 根据SDK版本判断使用哪一版的渲染器
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                mRenderer = new LollipopCameraRenderer(Camera2Activity.this, cameraId, mController);
-            }else{
-                mRenderer = new KitkatCameraRenderer(Camera2Activity.this, cameraId, mController);
-            }
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//                mRenderer = new LollipopCameraRenderer(Camera2Activity.this, cameraId, mController);
+//            }else{
+//                mRenderer = new KitkatCameraRenderer(Camera2Activity.this, cameraId, mController);
+//            }
+            mRenderer = new KitkatCameraRenderer(Camera2Activity.this, cameraId, mController);
 
             // 设置默认的分辨率
             mRenderer.setDefaultPreviewSize(mWidth, mHeight);

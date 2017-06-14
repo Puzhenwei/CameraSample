@@ -157,11 +157,12 @@ public class TextureController implements GLSurfaceView.Renderer {
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         GLESUtils.getMatrix(SM,mShowType,
             mDataSize.x, mDataSize.y, width, height);
-        mShowFilter.setSize(width, height);
         mShowFilter.setMatrix(SM);
-        mGroupFilter.setSize(mDataSize.x, mDataSize.y);
-        mEffectFilter.setSize(mDataSize.x, mDataSize.y);
-        mShowFilter.setSize(mDataSize.x, mDataSize.y);
+        // 调整filter的size，使得filter的坐标与预览的坐标重合
+        // 否则会出现位置不对的情况
+        mEffectFilter.setSize(width, height);
+        mGroupFilter.setSize(width, height);
+        mShowFilter.setSize(width, height);
         if (mRenderer != null) {
             mRenderer.onSurfaceChanged(gl, width, height);
         }

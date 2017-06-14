@@ -105,33 +105,39 @@ public class StickerUtils {
                 Bitmap temp = decoder.decodeRegion(rect, options);
                 Matrix matrix = new Matrix();
 
-//                if (scale == 0 || (facer.getType().equals("foreground") && scale == 1)
-//                        || (facer.getType().equals("frame") && scale == 1)) {
-//                    float scaleW = DisplayUtils.getScreenWidth(context) / temp.getWidth();
-//                    float scaleH = DisplayUtils.getScreenHeight(context) / temp.getHeight();
-//                    if (temp.getWidth() > temp.getHeight()) {
-//                        scale = scaleW > scaleH ? scaleW : scaleH;
-//                    } else {
-//                        scale = scaleW < scaleH ? scaleW : scaleH;
-//                    }
-//                }
-                if (facer.getType().equals("foreground") && scale == 1) {
-                    scale = (float) DisplayUtils.getScreenWidth(context) / (float) temp.getWidth();
-                    Log.d(TAG, "scale = " + scale + "screen width = " + DisplayUtils.getScreenWidth(context) + ", bitmap with = " + temp.getWidth());
-                } else if (facer.getType().equals("frame") && scale == 1) {
-                    scale = 1374 / temp.getHeight();
+                int height = DisplayUtils.getScreenHeight(context);
+                int width = DisplayUtils.getScreenWidth(context);
+                // 根据类型计算前景和帧贴图的缩放比例，填充屏幕宽度
+                if ((facer.getType().equals("foreground") && scale == 1)
+                        || (facer.getType().equals("frame") && scale == 1)) {
+                    scale = (float) width / (float) temp.getWidth();
                 }
                 matrix.postScale(scale, scale);
                 // 根据返回的数据进行缩放
                 Bitmap bitmap = Bitmap.createBitmap(temp, 0, 0,
                         temp.getWidth(), temp.getHeight(), matrix, true);
-                Log.d(TAG, "type = " + facer.getType() + ", width = " + bitmap.getWidth() + ", height = " + bitmap.getHeight());
 
                 // 添加贴图
                 WaterMaskFilter filter = new WaterMaskFilter(context.getResources());
                 filter.setWaterMask(bitmap);
                 filter.setOffset(facer.getOffset().get(0), facer.getOffset().get(1));
-                filter.setPosition(0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+                // 前景类型需要添加到底部
+                if (facer.getType().equals("foreground")) {
+                    // TODO 这里还要引入GLSurfaceView 的高度，否则不知道图片到底放在啥位置
+                    filter.setPosition(0, 1372 - bitmap.getHeight(),
+                            bitmap.getWidth(), bitmap.getHeight());
+                }
+                // 帧类型从原点填充
+                else if (facer.getType().equals("frame")) {
+                    filter.setPosition(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                }
+                // TODO 其他鼻子、头部等元素则跟着人脸进行适配，这里先默认居中显示
+                else {
+                    filter.setPosition((width - bitmap.getWidth()) / 2,
+                            (1372 - bitmap.getHeight()) / 2 - 300,
+                            bitmap.getWidth(), bitmap.getHeight());
+                }
                 controller.addFilter(filter);
             } catch (IOException e) {
                 e.printStackTrace();

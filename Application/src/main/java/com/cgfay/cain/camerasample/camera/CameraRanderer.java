@@ -8,7 +8,10 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 
 import com.cgfay.cain.camerasample.filter.CameraFilter;
+import com.cgfay.cain.camerasample.filter.ClearFilter;
 import com.cgfay.cain.camerasample.filter.Filter;
+import com.cgfay.cain.camerasample.filter.GroupFilter;
+import com.cgfay.cain.camerasample.filter.TextureFilter;
 import com.cgfay.cain.camerasample.util.GLESUtils;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -46,12 +49,14 @@ public class CameraRanderer implements GLSurfaceView.Renderer {
             GLESUtils.flip(matrix, true, false);
             GLESUtils.rotate(matrix, 90);
         } else {
-            GLESUtils.rotate(matrix, 270);
+//            GLESUtils.rotate(matrix, 270);
+            // TODO 这里设置90度时，nexus5X后置摄像头正常， 其他手机待验证
+            GLESUtils.rotate(matrix, 90);
         }
         mBaseFilter.setMatrix(matrix);
     }
 
-    public SurfaceTexture getSurfaceTexture(){
+    public SurfaceTexture getSurfaceTexture() {
         return surfaceTexture;
     }
 
