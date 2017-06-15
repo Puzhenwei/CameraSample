@@ -13,7 +13,8 @@ import com.cgfay.cain.camerasample.data.Facer;
 import com.cgfay.cain.camerasample.data.Frame;
 import com.cgfay.cain.camerasample.data.Organ;
 import com.cgfay.cain.camerasample.data.Sticker;
-import com.cgfay.cain.camerasample.filter.WaterMaskFilter;
+import com.cgfay.cain.camerasample.filter.Filter;
+import com.cgfay.cain.camerasample.filter.StickerFilter;
 import com.cgfay.cain.camerasample.task.JsonParser;
 
 import java.io.File;
@@ -24,6 +25,14 @@ import java.util.List;
 public class StickerUtils {
 
     private static final String TAG = "StickerTask";
+
+    // 跟Filter 中的FILTER_NONE 值一致
+    public static final int STICKER_NONE = -1;
+
+    public static final int STICKER_HEAD = 1;
+    public static final int STICKER_NOSE = 2;
+    public static final int STICKER_FRAME = 3;
+    public static final int STICKER_FOREGROUND = 4;
 
     private StickerUtils() {}
 
@@ -105,8 +114,8 @@ public class StickerUtils {
                 Bitmap temp = decoder.decodeRegion(rect, options);
                 Matrix matrix = new Matrix();
 
-                int height = DisplayUtils.getScreenHeight(context);
-                int width = DisplayUtils.getScreenWidth(context);
+                int width = controller.getWindowSize().x;
+                int height = controller.getWindowSize().y;
                 // 根据类型计算前景和帧贴图的缩放比例，填充屏幕宽度
                 if ((facer.getType().equals("foreground") && scale == 1)
                         || (facer.getType().equals("frame") && scale == 1)) {
@@ -118,14 +127,17 @@ public class StickerUtils {
                         temp.getWidth(), temp.getHeight(), matrix, true);
 
                 // 添加贴图
-                WaterMaskFilter filter = new WaterMaskFilter(context.getResources());
+                StickerFilter filter = new StickerFilter(context.getResources());
                 filter.setWaterMask(bitmap);
                 filter.setOffset(facer.getOffset().get(0), facer.getOffset().get(1));
 
+                // 设置滤镜类型和子类型
+                filter.setFilterType(Filter.FilterType.Sticker);
+                filter.setSubFilterType(getStickerType(facer.getType()));
+
                 // 前景类型需要添加到底部
                 if (facer.getType().equals("foreground")) {
-                    // TODO 这里还要引入GLSurfaceView 的高度，否则不知道图片到底放在啥位置
-                    filter.setPosition(0, 1372 - bitmap.getHeight(),
+                    filter.setPosition(0, height - bitmap.getHeight(),
                             bitmap.getWidth(), bitmap.getHeight());
                 }
                 // 帧类型从原点填充
@@ -135,7 +147,7 @@ public class StickerUtils {
                 // TODO 其他鼻子、头部等元素则跟着人脸进行适配，这里先默认居中显示
                 else {
                     filter.setPosition((width - bitmap.getWidth()) / 2,
-                            (1372 - bitmap.getHeight()) / 2 - 300,
+                            (height - bitmap.getHeight()) / 2 - 300,
                             bitmap.getWidth(), bitmap.getHeight());
                 }
                 controller.addFilter(filter);
@@ -159,5 +171,19 @@ public class StickerUtils {
     public static void addGifTexture(Context context, TextureController controller,
                                      Facer facer, Organ organ, String bitmapPath) {
 
+    }
+
+    private static int getStickerType(String type) {
+        if (type.equals("head")) {
+            return STICKER_HEAD;
+        } else if (type.equals("nose")) {
+            return STICKER_NOSE;
+        } else if (type.equals("frame")) {
+            return STICKER_FRAME;
+        } else if (type.equals("foreground")) {
+            return STICKER_FOREGROUND;
+        } else {
+            return STICKER_NONE;
+        }
     }
 }

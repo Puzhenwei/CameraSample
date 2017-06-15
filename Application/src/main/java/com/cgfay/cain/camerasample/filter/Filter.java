@@ -20,6 +20,16 @@ public abstract class Filter {
 
     private static final String TAG = "Filter";
 
+    // 无滤镜
+    public static final int FILTER_NONE = -1;
+
+    // 滤镜类型
+    private FilterType mFilterType = FilterType.Normal;
+
+    // 子滤镜类型
+    private int mSubFilterType = FILTER_NONE;
+
+
     public static final int KEY_OUT = 0x101;
     public static final int KEY_IN = 0x102;
     public static final int KEY_INDEX = 0x201;
@@ -347,6 +357,48 @@ public abstract class Filter {
             return 0;
         }
         return b[index];
+    }
+
+
+    /**
+     * 设置滤镜类型
+     * @param type
+     */
+    public void setFilterType(FilterType type) {
+        mFilterType = type;
+    }
+
+    /**
+     * 获取滤镜类型
+     * @return
+     */
+    public FilterType getFilterType() {
+        return mFilterType;
+    }
+
+    public enum FilterType {
+        Normal, // 默认
+        Tint, // 色彩
+        Luminance, // 亮度
+        Contrast, // 对比度
+        Blur, // 高斯模糊
+        Sticker, // 贴纸
+    }
+
+    /**
+     * 设置子滤镜类型
+     * @param type
+     */
+    public void setSubFilterType(int type) {
+        mSubFilterType = type;
+    }
+
+    /**
+     * 获取子滤镜类型
+     * @return
+     */
+    public int getSubFilterType() {
+        return mSubFilterType;
     }
 
 }

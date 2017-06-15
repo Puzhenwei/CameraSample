@@ -14,9 +14,9 @@ import java.util.Arrays;
 
 
 // 添加水印
-public class WaterMaskFilter extends ClearFilter {
+public class StickerFilter extends ClearFilter {
 
-    private static final String TAG = "WaterMaskFilter";
+    private static final String TAG = "StickerFilter";
 
     private Bitmap mBitmap;
     private ClearFilter mFilter;
@@ -26,7 +26,7 @@ public class WaterMaskFilter extends ClearFilter {
 
     private int[] mTextures = new int[1];
 
-    public WaterMaskFilter(Resources resources) {
+    public StickerFilter(Resources resources) {
         super(resources);
         mFilter = new ClearFilter(resources) {
             @Override
@@ -34,6 +34,7 @@ public class WaterMaskFilter extends ClearFilter {
 
             }
         };
+        setFilterType(FilterType.Sticker);
     }
 
     @Override

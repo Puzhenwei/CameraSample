@@ -2,7 +2,10 @@ package com.cgfay.cain.camerasample.camera2;
 
 import android.content.Context;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
+import android.media.FaceDetector;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
@@ -60,15 +63,23 @@ public class TextureController implements GLSurfaceView.Renderer {
     private int[] mExportFrame = new int[1];
     private int[] mExportTexture = new int[1];
 
-    private boolean isRecord=false;                             //录像flag
-    private boolean isShoot=false;                              //一次拍摄flag
+    private boolean isRecord = false;                             //录像flag
+    private boolean isShoot = false;                              //一次拍摄flag
     private ByteBuffer[] outPutBuffer = new ByteBuffer[3];      //用于存储回调数据的buffer
     private FrameCallback mFrameCallback;                       //回调
     private int mFrameCallbackWidth, mFrameCallbackHeight;        //回调数据的宽高
     private int indexOutput = 0;                                //回调数据使用的buffer索引
 
+
+    // 是否允许人脸识别
+    private boolean mEnableDetection = true;
+    // 是否绘制贴纸
+    private boolean mDrawStriker = false;
+    // 用于标志其他特效存在时是否允许绘制贴纸
+    private boolean mEnableSticker = true;
+
     public TextureController(Context context) {
-        this.mContext=context;
+        this.mContext = context;
         init();
     }
 
@@ -172,13 +183,19 @@ public class TextureController implements GLSurfaceView.Renderer {
     public void onDrawFrame(GL10 gl) {
         if(isParamSet.get()){
             mEffectFilter.draw();
-            mGroupFilter.setTextureId(mEffectFilter.getOutputTexture());
-            mGroupFilter.draw();
+            if (mEnableSticker && mDrawStriker) {
+                mGroupFilter.setTextureId(mEffectFilter.getOutputTexture());
+                mGroupFilter.draw();
+            }
 
             // 显示传入的texture上，一般是显示在屏幕上
             GLES20.glViewport(0,0,mWindowSize.x, mWindowSize.y);
             mShowFilter.setMatrix(SM);
-            mShowFilter.setTextureId(mGroupFilter.getOutputTexture());
+            if (mEnableSticker && mDrawStriker) {
+                mShowFilter.setTextureId(mGroupFilter.getOutputTexture());
+            } else {
+                mShowFilter.setTextureId(mEffectFilter.getOutputTexture());
+            }
             mShowFilter.draw();
 
             if (mRenderer != null) {
@@ -218,9 +235,9 @@ public class TextureController implements GLSurfaceView.Renderer {
      *  {@link GLESUtils # TYPE_FITEND}、{@link GLESUtils # TYPE_FITSTART}、
      *  {@link GLESUtils # TYPE_FITXY}，与 {@link ImageView.ScaleType}对应
      */
-    public void setShowType(int type){
-        this.mShowType=type;
-        if(mWindowSize.x>0&&mWindowSize.y>0){
+    public void setShowType(int type) {
+        this.mShowType = type;
+        if (mWindowSize.x > 0 &&mWindowSize.y > 0) {
             GLESUtils.getMatrix(SM,mShowType,
                 mDataSize.x,mDataSize.y,mWindowSize.x,mWindowSize.y);
             mShowFilter.setMatrix(SM);
@@ -348,7 +365,7 @@ public class TextureController implements GLSurfaceView.Renderer {
     /**
      * 请求渲染
      */
-    public void requestRender(){
+    public void requestRender() {
         mGLView.requestRender();
     }
 
@@ -460,4 +477,44 @@ public class TextureController implements GLSurfaceView.Renderer {
     public void setCameraReverse(boolean reverse) {
         mReverse = reverse;
     }
+
+    /**
+     * 禁止使用人脸识别
+     */
+    public void disableDetection() {
+        mEnableDetection = false;
+    }
+
+    /**
+     * 允许使用人脸识别
+     */
+    public void enableDetection() {
+        mEnableDetection = true;
+    }
+
+    /**
+     * 设置人脸的位置信息
+     * @param faces
+     */
+    public void setDetectedFaces(Camera.Face[] faces) {
+        if (faces == null || faces.length < 1) {
+            mDrawStriker = false;
+            return;
+        }
+        mDrawStriker = true;
+        updateStickerFilterPosition(faces);
+        requestRender();
+    }
+
+    /**
+     * 更新Sticker过滤器的位置
+     */
+    private void updateStickerFilterPosition(Camera.Face[] faces) {
+        // TODO 目前仅实现处理存在一个人脸的情况, 多个人脸的情况需要对GroupFilter进行改造
+        Camera.Face face = faces[0];
+        Rect rect = face.rect;
+        // 判定人脸的矩形是否在视图之内
+
+    }
+
 }

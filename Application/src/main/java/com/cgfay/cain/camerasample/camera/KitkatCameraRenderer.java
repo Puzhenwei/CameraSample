@@ -1,13 +1,29 @@
 package com.cgfay.cain.camerasample.camera;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.media.FaceDetector;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.Surface;
+import android.view.WindowManager;
 
 import com.cgfay.cain.camerasample.camera2.Renderer;
 import com.cgfay.cain.camerasample.camera2.TextureController;
+import com.cgfay.cain.camerasample.detection.FaceEvent;
+import com.cgfay.cain.camerasample.detection.StickerFaceDetection;
 import com.cgfay.cain.camerasample.util.DisplayUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,15 +44,20 @@ public class KitkatCameraRenderer implements Renderer {
     private int mDefaultWidth;
     private int mDefaultHeight;
 
+    private Handler mHandler = null;
+    private StickerFaceDetection mDetection;
+
     public KitkatCameraRenderer(Context context, int cameraID, TextureController controller) {
         this.mContext = context;
         this.mController = controller;
         this.mCameraID = cameraID;
+        mHandler = new DetectHandler();
+        mDetection = new StickerFaceDetection(mContext, mHandler);
     }
 
     @Override
     public void onDestroy() {
-        closeCamera();
+
     }
 
     @Override
@@ -101,6 +122,7 @@ public class KitkatCameraRenderer implements Renderer {
             e.printStackTrace();
         }
         mCamera.startPreview();
+        mHandler.sendEmptyMessage(FaceEvent.CAMERA_HAS_STARTED_PREVIEW);
     }
 
     @Override
@@ -168,4 +190,38 @@ public class KitkatCameraRenderer implements Renderer {
         }
         return reverse;
     }
+
+    /**
+     * 停止人脸识别监听
+     * 注意：takepicture 自身就已经调用stopFaceDetection了，再调用会跑出异常
+     */
+    private void stopFaceDetector() {
+        if (mCamera.getParameters().getMaxNumDetectedFaces() > 0) {
+            mCamera.setFaceDetectionListener(null);
+            mCamera.stopFaceDetection();
+        }
+    }
+
+    private class DetectHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case FaceEvent.UPDATE_FACE_RECT:
+                    Camera.Face[] faces = (Camera.Face[])msg.obj;
+                    // 在对应的位置上设置绘制
+                    mController.setDetectedFaces(faces);
+                    break;
+
+                case FaceEvent.CAMERA_HAS_STARTED_PREVIEW:
+                    // 判断是否支持人脸识别
+                    if (mCamera.getParameters().getMaxNumDetectedFaces() > 0) {
+                        mCamera.setFaceDetectionListener(mDetection);
+                        mCamera.startFaceDetection();
+                    }
+                    break;
+            }
+            super.handleMessage(msg);
+        }
+    }
+
 }
