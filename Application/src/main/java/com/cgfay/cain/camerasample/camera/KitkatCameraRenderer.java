@@ -1,21 +1,10 @@
 package com.cgfay.cain.camerasample.camera;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
-import android.graphics.YuvImage;
 import android.hardware.Camera;
-import android.media.FaceDetector;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
-import android.view.Surface;
-import android.view.WindowManager;
 
 import com.cgfay.cain.camerasample.camera2.Renderer;
 import com.cgfay.cain.camerasample.camera2.TextureController;
@@ -23,7 +12,6 @@ import com.cgfay.cain.camerasample.detection.FaceEvent;
 import com.cgfay.cain.camerasample.detection.StickerFaceDetection;
 import com.cgfay.cain.camerasample.util.DisplayUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

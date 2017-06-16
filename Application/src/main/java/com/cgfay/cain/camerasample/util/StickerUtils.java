@@ -114,8 +114,8 @@ public class StickerUtils {
                 Bitmap temp = decoder.decodeRegion(rect, options);
                 Matrix matrix = new Matrix();
 
-                int width = controller.getWindowSize().x;
-                int height = controller.getWindowSize().y;
+                int width = DisplayUtils.getScreenWidth(context);
+                int height = DisplayUtils.getScreenHeight(context);
                 // 根据类型计算前景和帧贴图的缩放比例，填充屏幕宽度
                 if ((facer.getType().equals("foreground") && scale == 1)
                         || (facer.getType().equals("frame") && scale == 1)) {

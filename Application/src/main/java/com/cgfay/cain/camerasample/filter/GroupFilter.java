@@ -188,4 +188,13 @@ public class GroupFilter extends Filter {
         GLES20.glDeleteFramebuffers(1, frame, 0);
         GLES20.glDeleteTextures(1, texture, 0);
     }
+
+
+    public List<Filter> getFilters() {
+        return mFilters;
+    }
+
+    public Queue<Filter> getFilterQueue() {
+        return mFilterQueue;
+    }
 }

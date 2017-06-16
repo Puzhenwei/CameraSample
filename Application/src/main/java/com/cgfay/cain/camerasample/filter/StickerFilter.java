@@ -70,7 +70,6 @@ public class StickerFilter extends ClearFilter {
         super.onSizeChanged(width, height);
         mWidth = width;
         mHeight = height;
-        Log.d(TAG, "width = " + width + ", height = " + height);
         mFilter.setSize(width, height);
     }
 
@@ -137,5 +136,14 @@ public class StickerFilter extends ClearFilter {
     @Override
     protected void setExpandData() {
         super.setExpandData();
+    }
+
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 }

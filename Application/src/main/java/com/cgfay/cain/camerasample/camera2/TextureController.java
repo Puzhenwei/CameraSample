@@ -5,7 +5,6 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.media.FaceDetector;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
@@ -15,8 +14,10 @@ import android.widget.ImageView;
 import com.cgfay.cain.camerasample.filter.ClearFilter;
 import com.cgfay.cain.camerasample.filter.Filter;
 import com.cgfay.cain.camerasample.filter.GroupFilter;
+import com.cgfay.cain.camerasample.filter.StickerFilter;
 import com.cgfay.cain.camerasample.filter.TextureFilter;
 import com.cgfay.cain.camerasample.util.GLESUtils;
+import com.cgfay.cain.camerasample.util.StickerUtils;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,8 +37,8 @@ public class TextureController implements GLSurfaceView.Renderer {
 
     private static final String TAG = "TextureController";
 
-    private static final int DEFAULT_WIDTH = 720;
-    private static final int DEFAULT_HEIGHT = 1280;
+    private static final int DEFAULT_WIDTH = 1080;
+    private static final int DEFAULT_HEIGHT = 1920;
 
     // 摄像头是否倒置，默认情况下是不倒置的
     private boolean mReverse = false;
@@ -53,7 +54,7 @@ public class TextureController implements GLSurfaceView.Renderer {
     private Point mDataSize;                                    //数据的大小
     private Point mWindowSize;                                  //输出视图的大小
     private AtomicBoolean isParamSet = new AtomicBoolean(false);
-    private float[] SM = new float[16];                           //用于绘制到屏幕上的变换矩阵
+    private float[] mMatrix = new float[16];                           //用于绘制到屏幕上的变换矩阵
     private int mShowType = GLESUtils.TYPE_CENTERCROP;          //输出到屏幕上的方式
     private int mDirectionFlag = -1;                               //AiyaFilter方向flag
 
@@ -166,12 +167,14 @@ public class TextureController implements GLSurfaceView.Renderer {
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        // 调整filter的size，使得filter的坐标与预览的坐标重合
-        // 否则会出现位置不对的情况
-        mEffectFilter.setSize(width, height);
-        mGroupFilter.setSize(width, height);
+        GLESUtils.getMatrix(mMatrix, mShowType,
+                mDataSize.x, mDataSize.y, width, height);
         mShowFilter.setSize(width, height);
-        if (mRenderer != null) {
+        mShowFilter.setMatrix(mMatrix);
+        mGroupFilter.setSize(mDataSize.x, mDataSize.y);
+        mEffectFilter.setSize(mDataSize.x, mDataSize.y);
+        mShowFilter.setSize(mDataSize.x, mDataSize.y);
+        if(mRenderer!=null){
             mRenderer.onSurfaceChanged(gl, width, height);
         }
     }
@@ -186,8 +189,8 @@ public class TextureController implements GLSurfaceView.Renderer {
             }
 
             // 显示传入的texture上，一般是显示在屏幕上
-            GLES20.glViewport(0,0,mWindowSize.x, mWindowSize.y);
-            mShowFilter.setMatrix(SM);
+            GLES20.glViewport(0, 0, mWindowSize.x, mWindowSize.y);
+            mShowFilter.setMatrix(mMatrix);
             if (mEnableSticker && mDrawStriker) {
                 mShowFilter.setTextureId(mGroupFilter.getOutputTexture());
             } else {
@@ -235,9 +238,9 @@ public class TextureController implements GLSurfaceView.Renderer {
     public void setShowType(int type) {
         this.mShowType = type;
         if (mWindowSize.x > 0 &&mWindowSize.y > 0) {
-            GLESUtils.getMatrix(SM,mShowType,
+            GLESUtils.getMatrix(mMatrix,mShowType,
                 mDataSize.x,mDataSize.y,mWindowSize.x,mWindowSize.y);
-            mShowFilter.setMatrix(SM);
+            mShowFilter.setMatrix(mMatrix);
             mShowFilter.setSize(mWindowSize.x,mWindowSize.y);
         }
     }
@@ -323,7 +326,7 @@ public class TextureController implements GLSurfaceView.Renderer {
             frameCallback();
             isShoot = false;
             GLESUtils.unBindFrameBuffer();
-            mShowFilter.setMatrix(SM);
+            mShowFilter.setMatrix(mMatrix);
         }
     }
 
@@ -509,9 +512,47 @@ public class TextureController implements GLSurfaceView.Renderer {
     private void updateStickerFilterPosition(Camera.Face[] faces) {
         // TODO 目前仅实现处理存在一个人脸的情况, 多个人脸的情况需要对GroupFilter进行改造
         Camera.Face face = faces[0];
-        Rect rect = face.rect;
-        // 判定人脸的矩形是否在视图之内
+        if (mGroupFilter.getFilterQueue().isEmpty() && mGroupFilter.getFilters().isEmpty()) {
+            return;
+        }
 
+        // 计算filter的位置
+        for (Filter filter : mGroupFilter.getFilters()) {
+            if (filter instanceof StickerFilter) {
+                calculateStickerPosition(face, (StickerFilter) filter);
+            }
+        }
+    }
+
+    private void calculateStickerPosition(Camera.Face face, StickerFilter filter) {
+
+
+        Rect rect = face.rect;
+        Log.d(TAG, "left " + rect.left + ", top = " + rect.top
+                + ", right = " + rect.right + ", bottom = " + rect.bottom
+                + ", width = " + mDataSize.x + ", height = " + mDataSize.y);
+        switch (filter.getSubFilterType()) {
+            case StickerUtils.STICKER_HEAD:
+                filter.setPosition(rect.centerX() - filter.getWidth() / 2,
+                        rect.top - filter.getHeight(),
+                        filter.getWidth(), filter.getHeight());
+                break;
+
+            case StickerUtils.STICKER_NOSE:
+                filter.setPosition(rect.centerX() - filter.getWidth() / 2,
+                        rect.centerY() - filter.getHeight() / 2,
+                        filter.getWidth(), filter.getHeight());
+                break;
+
+            case StickerUtils.STICKER_FRAME:
+                filter.setPosition(0, 0, filter.getWidth(), filter.getHeight());
+                break;
+
+            case StickerUtils.STICKER_FOREGROUND:
+                filter.setPosition(0, mDataSize.y - filter.getHeight(),
+                        filter.getWidth(), filter.getHeight());
+                break;
+        }
     }
 
 }
