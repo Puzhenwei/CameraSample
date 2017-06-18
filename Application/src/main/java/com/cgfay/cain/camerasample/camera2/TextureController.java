@@ -152,7 +152,6 @@ public class TextureController implements GLSurfaceView.Renderer {
             sdkParamSet();
         }
         calculateCallbackOM();
-        mEffectFilter.setFlag(mDirectionFlag);
 
         deleteFrameBuffer();
         GLES20.glGenFramebuffers(1, mExportFrame, 0);

@@ -19,14 +19,14 @@ public class CameraFilter extends BaseFilter {
     @Override
     public void setFlag(int flag) {
         super.setFlag(flag);
-        // 前置摄像头
-        if (getFlag() == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            cameraFront();
-        }
-        //后置摄像头
-        else if(getFlag() == Camera.CameraInfo.CAMERA_FACING_BACK) {
-            cameraBack();
-        }
+//        // 前置摄像头
+//        if (getFlag() == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+//            cameraFront();
+//        }
+//        //后置摄像头
+//        else if(getFlag() == Camera.CameraInfo.CAMERA_FACING_BACK) {
+//            cameraBack();
+//        }
     }
 
     private void cameraFront() {

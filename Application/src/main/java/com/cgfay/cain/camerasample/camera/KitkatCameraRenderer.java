@@ -109,6 +109,7 @@ public class KitkatCameraRenderer implements Renderer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        mCamera.setDisplayOrientation(90);
         mCamera.startPreview();
         mHandler.sendEmptyMessage(FaceEvent.CAMERA_HAS_STARTED_PREVIEW);
     }

@@ -5,8 +5,12 @@ import android.content.Context;
 import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 
+import com.cgfay.cain.camerasample.detection.FaceEvent;
+import com.cgfay.cain.camerasample.detection.StickerFaceDetection;
 import com.cgfay.cain.camerasample.util.DisplayUtils;
 
 import java.io.IOException;
@@ -28,13 +32,21 @@ public class KitkatCamera implements ICamera {
     private Point mPicSize;
     private Point mPreSize;
 
-    public KitkatCamera(Context context) {
+    private Handler mHandler = null;
+    private StickerFaceDetection mDetection;
+
+    private CameraView mCameraView;
+
+    public KitkatCamera(Context context, CameraView cameraView) {
         this.mConfig = new Config();
         int width = DisplayUtils.getScreenWidth(context);
         mConfig.minPreviewWidth = width;
         mConfig.minPictureWidth = width;
         mConfig.rate = 1.778f;
         sizeComparator = new CameraSizeComparator();
+        mHandler = new DetectHandler();
+        mDetection = new StickerFaceDetection(context, mHandler);
+        mCameraView = cameraView;
     }
 
     @Override
@@ -50,7 +62,9 @@ public class KitkatCamera implements ICamera {
                     mConfig.minPreviewWidth);
             param.setPictureSize(picSize.width, picSize.height);
             param.setPreviewSize(preSize.width, preSize.height);
+            param.setRotation(90);
             mCamera.setParameters(param);
+            mCamera.setDisplayOrientation(90);
             Camera.Size pre = param.getPreviewSize();
             Camera.Size pic = param.getPictureSize();
             mPicSize = new Point(pic.height, pic.width);
@@ -79,6 +93,7 @@ public class KitkatCamera implements ICamera {
     public boolean startPreview() {
         if (mCamera != null) {
             mCamera.startPreview();
+            mHandler.sendEmptyMessage(FaceEvent.CAMERA_HAS_STARTED_PREVIEW);
         }
         return false;
     }
@@ -86,6 +101,7 @@ public class KitkatCamera implements ICamera {
     @Override
     public void stopPreview() {
         if (mCamera != null) {
+            stopFaceDetector();
             mCamera.stopPreview();
         }
     }
@@ -218,4 +234,36 @@ public class KitkatCamera implements ICamera {
     }
 
 
+    /**
+     * 停止人脸识别监听
+     * 注意：takepicture 自身就已经调用stopFaceDetection了，再调用会跑出异常
+     */
+    private void stopFaceDetector() {
+        if (mCamera.getParameters().getMaxNumDetectedFaces() > 0) {
+            mCamera.setFaceDetectionListener(null);
+            mCamera.stopFaceDetection();
+        }
+    }
+
+    private class DetectHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case FaceEvent.UPDATE_FACE_RECT:
+                    Camera.Face[] faces = (Camera.Face[])msg.obj;
+                    // 在对应的位置上设置绘制
+                    mCameraView.setDetectedFaces(faces);
+                    break;
+
+                case FaceEvent.CAMERA_HAS_STARTED_PREVIEW:
+                    // 判断是否支持人脸识别
+                    if (mCamera.getParameters().getMaxNumDetectedFaces() > 0) {
+                        mCamera.setFaceDetectionListener(mDetection);
+                        mCamera.startFaceDetection();
+                    }
+                    break;
+            }
+            super.handleMessage(msg);
+        }
+    }
 }
