@@ -4,6 +4,8 @@ import android.content.res.Resources;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
 
+import com.cgfay.cain.camerasample.util.GLESUtils;
+
 import java.nio.ByteBuffer;
 
 public class TextureFilter extends Filter {
@@ -30,8 +32,7 @@ public class TextureFilter extends Filter {
     @Override
     protected void onCreate() {
         mFilter.create();
-        GLES20.glGenTextures(1, mCameraTexture, 0);
-        // 渲染的Texture使用camera的Texture绑定
+        mCameraTexture[0] = GLESUtils.getExternalOESTextureID();
         mSurfaceTexture = new SurfaceTexture(mCameraTexture[0]);
     }
 
