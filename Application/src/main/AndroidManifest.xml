@@ -26,6 +26,9 @@
         <activity android:name=".activity.GLCaptureViewActivity" />
         <activity android:name=".activity.Camera2Activity" />
         <activity android:name=".activity.PhotoViewActivity" />
+        <activity android:name=".activity.CameraSurfaceViewActivity"
+            android:theme="@style/CameraTheme">
+        </activity>
     </application>
 
 </manifest>

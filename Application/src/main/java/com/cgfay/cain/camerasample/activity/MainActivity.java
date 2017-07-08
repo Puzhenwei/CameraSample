@@ -15,10 +15,12 @@ import com.cgfay.cain.camerasample.util.FileUtils;
 import java.io.File;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "MainActivity";
     private static final String ZIP_PATH = "zips";
+
+    Button mBtnCameraSurface;
 
     Button mBtnCamera;
 
@@ -33,32 +35,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         copyZipsFromAssets();
         setContentView(R.layout.activity_main);
+
+        mBtnCameraSurface = (Button) findViewById(R.id.btn_camera_new);
+        mBtnCameraSurface.setOnClickListener(this);
+
         mBtnCamera = (Button) findViewById(R.id.btn_camera);
-        mBtnCamera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, CaptureViewActivity.class);
-                startActivity(intent);
-            }
-        });
+        mBtnCamera.setOnClickListener(this);
+
         mBtnGLES = (Button) findViewById(R.id.btn_gles);
-        mBtnGLES.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, GLCaptureViewActivity.class);
-                startActivity(intent);
-            }
-        });
+        mBtnGLES.setOnClickListener(this);
 
         mBtnCamera2 = (Button) findViewById(R.id.btn_camera2);
-        mBtnCamera2.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, Camera2Activity.class);
-                intent.putExtra("folderPath", folderPath);
-                startActivity(intent);
-            }
-        });
+        mBtnCamera2.setOnClickListener(this);
 
     }
 
@@ -82,6 +70,29 @@ public class MainActivity extends AppCompatActivity {
             folderPath[i] = outputPath;
             ZipExtractor extractor = new ZipExtractor(MainActivity.this, inputPath, outputPath);
             extractor.execute();
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btn_camera_new:
+                startActivity(new Intent(MainActivity.this, CameraSurfaceViewActivity.class));
+                break;
+
+            case R.id.btn_camera:
+                startActivity(new Intent(MainActivity.this, CaptureViewActivity.class));
+                break;
+
+            case R.id.btn_camera2:
+                Intent intent = new Intent(MainActivity.this, Camera2Activity.class);
+                intent.putExtra("folderPath", folderPath);
+                startActivity(intent);
+                break;
+
+            case R.id.btn_gles:
+                startActivity(new Intent(MainActivity.this, GLCaptureViewActivity.class));
+                break;
         }
     }
 }

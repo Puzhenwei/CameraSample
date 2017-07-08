@@ -40,7 +40,7 @@
                 android:text="@string/btn_switch_camera"/>
         </FrameLayout>
 
-        <com.cgfay.cain.camerasample.camera.CameraView
+        <com.cgfay.cain.camerasample.camera.CameraGLSurfaceView
             android:id="@+id/view_camera"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

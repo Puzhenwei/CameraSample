@@ -6,26 +6,26 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.net.Uri;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
 import com.cgfay.cain.camerasample.R;
+import com.cgfay.cain.camerasample.camera.CameraGLSurfaceView;
 import com.cgfay.cain.camerasample.task.MediaSaver;
 import com.cgfay.cain.camerasample.task.MediaSaverTask;
 import com.cgfay.cain.camerasample.util.PermissionUtils;
-import com.cgfay.cain.camerasample.camera.CameraView;
 
 
 public class GLCaptureViewActivity extends AppCompatActivity {
 
     private static final String TAG = "GLCaptureViewActivity";
 
-    private CameraView mCameraView;
+    private CameraGLSurfaceView mCameraView;
     private Button mBtnViewPhoto;
     private Button mBtnTake;
     private Button mBtnSwitchCamera;
@@ -46,7 +46,7 @@ public class GLCaptureViewActivity extends AppCompatActivity {
         @Override
         public void run() {
             setContentView(R.layout.activity_glcapture);
-            mCameraView = (CameraView) findViewById(R.id.view_camera);
+            mCameraView = (CameraGLSurfaceView) findViewById(R.id.view_camera);
 
             mBtnViewPhoto = (Button) findViewById(R.id.btn_view_photo);
             mBtnTake = (Button) findViewById(R.id.btn_take);

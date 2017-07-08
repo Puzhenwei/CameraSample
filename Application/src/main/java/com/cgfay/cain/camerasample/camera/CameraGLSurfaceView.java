@@ -25,7 +25,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 
-public class CameraView extends GLSurfaceView implements GLSurfaceView.Renderer {
+public class CameraGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
     private static final String TAG = "CameraView";
 
@@ -49,11 +49,11 @@ public class CameraView extends GLSurfaceView implements GLSurfaceView.Renderer 
     private volatile boolean mEnableSticker = true;
 
 
-    public CameraView(Context context) {
+    public CameraGLSurfaceView(Context context) {
         this(context,null);
     }
 
-    public CameraView(Context context, AttributeSet attrs) {
+    public CameraGLSurfaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(context);
     }

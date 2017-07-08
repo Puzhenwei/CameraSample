@@ -35,9 +35,9 @@ public class KitkatCamera implements ICamera {
     private Handler mHandler = null;
     private StickerFaceDetection mDetection;
 
-    private CameraView mCameraView;
+    private CameraGLSurfaceView mCameraView;
 
-    public KitkatCamera(Context context, CameraView cameraView) {
+    public KitkatCamera(Context context, CameraGLSurfaceView cameraView) {
         this.mConfig = new Config();
         int width = DisplayUtils.getScreenWidth(context);
         mConfig.minPreviewWidth = width;
